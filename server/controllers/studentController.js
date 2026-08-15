@@ -124,3 +124,100 @@ export const getStudentById = async (req, res) => {
         });
     }
 };
+
+export const updateStudent = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid student ID"
+            });
+        }
+
+        const allowedFields = [
+            "phone",
+            "dateOfBirth",
+            "address",
+            "guardianName",
+            "guardianPhone",
+            "status"
+        ];
+
+        const updates = {};
+
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updates[field] = req.body[field];
+            }
+        }
+
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            updates,
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate("user", "name email isActive");
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        res.status(200).json({
+            message: "Student updated successfully",
+            student
+        });
+    } catch (error) {
+        console.error("UPDATE STUDENT ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to update student"
+        });
+    }
+};
+
+export const updateStudentStatus = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid student ID"
+            });
+        }
+
+        const { status } = req.body;
+
+        if (!["active", "paused", "inactive"].includes(status)) {
+            return res.status(400).json({
+                message: "Invalid student status"
+            });
+        }
+
+        const student = await Student.findByIdAndUpdate(
+            req.params.id,
+            { status },
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate("user", "name email isActive");
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        res.status(200).json({
+            message: "Student status updated successfully",
+            student
+        });
+    } catch (error) {
+        console.error("UPDATE STUDENT STATUS ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to update student status"
+        });
+    }
+};

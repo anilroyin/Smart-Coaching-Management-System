@@ -3,7 +3,9 @@ import express from "express";
 import {
     createStudent,
     getStudents,
-    getStudentById
+    getStudentById,
+    updateStudent,
+    updateStudentStatus
 } from "../controllers/studentController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -32,5 +34,19 @@ router.get(
     roleMiddleware("admin"),
     getStudentById
 );
+//update a student
+router.put(
+    "/:id",
+    authMiddleware,
+    roleMiddleware("admin"),
+    updateStudent
+);
+
+router.patch(
+    "/:id/status",
+    authMiddleware,
+    roleMiddleware("admin"),
+    updateStudentStatus
+); 
 
 export default router;
