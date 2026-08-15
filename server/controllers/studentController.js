@@ -73,3 +73,23 @@ export const createStudent = async (req, res) => {
     });
 }
 };
+
+export const getStudents = async (req, res) => {
+    try {
+        const students = await Student.find()
+            .populate("user", "name email isActive")
+            .select("-__v");
+
+        res.status(200).json({
+            message: "Students fetched successfully",
+            count: students.length,
+            students
+        });
+    } catch (error) {
+        console.error("GET STUDENTS ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to fetch students"
+        });
+    }
+};
