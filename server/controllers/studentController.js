@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import mongoose from "mongoose";
 import User from "../models/user.js";
 import Student from "../models/student.js";
 
@@ -90,6 +91,36 @@ export const getStudents = async (req, res) => {
 
         res.status(500).json({
             message: "Failed to fetch students"
+        });
+    }
+};
+
+export const getStudentById = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({
+                message: "Invalid student ID"
+            });
+        }
+
+        const student = await Student.findById(req.params.id)
+            .populate("user", "name email isActive");
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        res.status(200).json({
+            message: "Student fetched successfully",
+            student
+        });
+    } catch (error) {
+        console.error("GET STUDENT ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to fetch student"
         });
     }
 };
