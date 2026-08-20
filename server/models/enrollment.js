@@ -19,6 +19,35 @@ const enrollmentSchema = new mongoose.Schema(
             ref: "Teacher",
             required: true
         },
+        teacherAssignedAt: {
+             type: Date,
+              required: true
+        },
+
+        teacherHistory: [
+           {
+        teacher: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Teacher",
+            required: true
+        },
+
+        fromDate: {
+            type: Date,
+            required: true
+        },
+
+        toDate: {
+            type: Date,
+            required: true
+        },
+
+        reason: {
+            type: String,
+            trim: true
+             }
+           }
+        ],
 
         monthlyFee: {
             type: Number,
