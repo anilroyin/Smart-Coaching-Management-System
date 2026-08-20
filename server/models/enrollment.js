@@ -19,6 +19,11 @@ const enrollmentSchema = new mongoose.Schema(
             ref: "Teacher",
             required: true
         },
+        teachingSlot: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "TeachingSlot",
+            required: true
+         },
         teacherAssignedAt: {
              type: Date,
               required: true
