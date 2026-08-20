@@ -103,13 +103,17 @@ export const createEnrollment = async (req, res) => {
             });
         }
 
-        const enrollment = await Enrollment.create({
-            student: studentId,
-            course: courseId,
-            teacher: teacherId,
-            monthlyFee: enrollmentFee,
-            startDate: startDate || new Date()
-        });
+        const enrollmentStartDate = startDate || new Date();
+
+         const enrollment = await Enrollment.create({
+              student: studentId,
+              course: courseId,
+              teacher: teacherId,
+              teacherAssignedAt: enrollmentStartDate,
+              teacherHistory: [],
+              monthlyFee: enrollmentFee,
+              startDate: enrollmentStartDate
+           });
 
         // Return useful information instead of only ObjectIds
         const populatedEnrollment = await Enrollment.findById(
@@ -141,6 +145,173 @@ export const createEnrollment = async (req, res) => {
 
         res.status(500).json({
             message: "Failed to create enrollment"
+        });
+    }
+};
+
+export const getEnrollments = async (req, res) => {
+    try {
+        const enrollments = await Enrollment.find()
+            .populate({
+                path: "student",
+                populate: {
+                    path: "user",
+                    select: "name email"
+                }
+            })
+            .populate("course", "name monthlyFee")
+            .populate({
+                path: "teacher",
+                populate: {
+                    path: "user",
+                    select: "name email"
+                }
+            })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            message: "Enrollments fetched successfully",
+            enrollments
+        });
+
+    } catch (error) {
+        console.error("GET ENROLLMENTS ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to fetch enrollments"
+        });
+    }
+};
+
+export const getEnrollmentById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid enrollment ID"
+            });
+        }
+
+        const enrollment = await Enrollment.findById(id)
+            .populate({
+                path: "student",
+                populate: {
+                    path: "user",
+                    select: "name email"
+                }
+            })
+            .populate("course", "name monthlyFee")
+            .populate({
+                path: "teacher",
+                populate: {
+                    path: "user",
+                    select: "name email"
+                }
+            });
+
+        if (!enrollment) {
+            return res.status(404).json({
+                message: "Enrollment not found"
+            });
+        }
+
+        res.status(200).json({
+            message: "Enrollment fetched successfully",
+            enrollment
+        });
+
+    } catch (error) {
+        console.error("GET ENROLLMENT ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to fetch enrollment"
+        });
+    }
+};
+
+export const pauseEnrollment = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid enrollment ID"
+            });
+        }
+
+        const enrollment = await Enrollment.findById(id);
+
+        if (!enrollment) {
+            return res.status(404).json({
+                message: "Enrollment not found"
+            });
+        }
+
+        if (enrollment.status !== "active") {
+            return res.status(400).json({
+                message: "Only active enrollments can be paused"
+            });
+        }
+
+        enrollment.status = "paused";
+        enrollment.pausedAt = new Date();
+
+        await enrollment.save();
+
+        res.status(200).json({
+            message: "Enrollment paused successfully",
+            enrollment
+        });
+
+    } catch (error) {
+        console.error("PAUSE ENROLLMENT ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to pause enrollment"
+        });
+    }
+};
+
+export const resumeEnrollment = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid enrollment ID"
+            });
+        }
+
+        const enrollment = await Enrollment.findById(id);
+
+        if (!enrollment) {
+            return res.status(404).json({
+                message: "Enrollment not found"
+            });
+        }
+
+        if (enrollment.status !== "paused") {
+            return res.status(400).json({
+                message: "Only paused enrollments can be resumed"
+            });
+        }
+
+        enrollment.status = "active";
+        enrollment.resumedAt = new Date();
+
+        await enrollment.save();
+
+        res.status(200).json({
+            message: "Enrollment resumed successfully",
+            enrollment
+        });
+
+    } catch (error) {
+        console.error("RESUME ENROLLMENT ERROR:", error);
+
+        res.status(500).json({
+            message: "Failed to resume enrollment"
         });
     }
 };
