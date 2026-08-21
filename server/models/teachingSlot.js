@@ -14,6 +14,12 @@ const teachingSlotSchema = new mongoose.Schema(
             required: true
         },
 
+        className: {
+            type: String,
+            required: true,
+            trim: true
+        },
+
         dayOfWeek: {
             type: String,
             enum: [
