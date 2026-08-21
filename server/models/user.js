@@ -23,13 +23,50 @@ const userSchema = new mongoose.Schema(
 
         role: {
             type: String,
-            enum: ["admin", "teacher", "student"],
+            enum: ["super_admin", "admin", "teacher", "student"],
             required: true
         },
 
         isActive: {
             type: Boolean,
             default: true
+        },
+
+        permissions: {
+            students: {
+                type: Boolean,
+                default: false
+            },
+
+            teachers: {
+                type: Boolean,
+                default: false
+            },
+
+            courses: {
+                type: Boolean,
+                default: false
+            },
+
+            teachingSlots: {
+                type: Boolean,
+                default: false
+            },
+
+            enrollments: {
+                type: Boolean,
+                default: false
+            },
+
+            fees: {
+                type: Boolean,
+                default: false
+            },
+
+            settings: {
+                type: Boolean,
+                default: false
+            }
         }
     },
     {
