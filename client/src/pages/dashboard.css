@@ -1,0 +1,424 @@
+/* ========================================
+   SCMS DASHBOARD
+   APPLE-INSPIRED ADMIN UI
+   ======================================== */
+
+.dashboard {
+    width: 100%;
+}
+
+
+/* ========================================
+   DASHBOARD HEADER
+   ======================================== */
+
+.dashboard-header {
+    margin-bottom: 28px;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.8px;
+    color: #1d1d1f;
+}
+
+.dashboard-header p {
+    margin: 8px 0 0;
+    font-size: 15px;
+    color: #6e6e73;
+}
+
+.dashboard-header strong {
+    color: #1d1d1f;
+    font-weight: 500;
+}
+
+
+/* ========================================
+   STATISTICS
+   ======================================== */
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: #ffffff;
+    border: 1px solid #e5e5e7;
+    border-radius: 14px;
+    padding: 22px;
+    min-height: 115px;
+    box-sizing: border-box;
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    border-color: #d2d2d7;
+}
+
+.stat-card-label {
+    font-size: 14px;
+    color: #6e6e73;
+    margin-bottom: 14px;
+}
+
+.stat-card-value {
+    font-size: 32px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.8px;
+    color: #1d1d1f;
+}
+
+
+/* ========================================
+   DASHBOARD GRID
+   ======================================== */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+
+/* ========================================
+   DASHBOARD SECTION
+   ======================================== */
+
+.dashboard-section {
+    background: #ffffff;
+    border: 1px solid #e5e5e7;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+
+/* ========================================
+   SECTION HEADER
+   ======================================== */
+
+.section-header {
+    padding: 18px 20px;
+
+    border-bottom: 1px solid #e5e5e7;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.section-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+.section-header span {
+    font-size: 12px;
+    color: #86868b;
+}
+
+
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+
+.empty-state {
+    min-height: 180px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+}
+
+.empty-state p {
+    margin: 0;
+
+    font-size: 14px;
+    color: #86868b;
+
+    text-align: center;
+}
+
+
+/* ========================================
+   TODAY'S SCHEDULE
+   ======================================== */
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ========================================
+   SCHEDULE HEADER
+
+   Time | Subject | Class | Teacher | Students
+   ======================================== */
+
+.schedule-header {
+    display: grid;
+
+    grid-template-columns:
+        68px
+        minmax(100px, 1fr)
+        45px
+        90px
+        55px;
+
+    align-items: center;
+
+    padding: 10px 14px;
+
+    background: #fafafa;
+
+    border-bottom: 1px solid #e5e5e7;
+
+    box-sizing: border-box;
+}
+
+.schedule-header span {
+    font-size: 10px;
+    font-weight: 500;
+    color: #86868b;
+}
+
+
+/* ========================================
+   SCHEDULE ROW
+   ======================================== */
+
+.schedule-item {
+    display: grid;
+
+    grid-template-columns:
+        68px
+        minmax(100px, 1fr)
+        45px
+        90px
+        55px;
+
+    align-items: center;
+
+    min-height: 64px;
+
+    padding: 0 14px;
+
+    border-bottom: 1px solid #e5e5e7;
+
+    box-sizing: border-box;
+}
+
+.schedule-item:last-child {
+    border-bottom: none;
+}
+
+
+/* ========================================
+   TIME
+   ======================================== */
+
+.schedule-time strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+
+/* ========================================
+   SUBJECT
+   ======================================== */
+
+.schedule-subject {
+    min-width: 0;
+}
+
+.schedule-subject strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+
+/* ========================================
+   CLASS
+   ======================================== */
+
+.schedule-class {
+    display: flex;
+    flex-direction: column;
+}
+
+.schedule-class strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+
+/* ========================================
+   TEACHER
+   ======================================== */
+
+.schedule-teacher {
+    min-width: 0;
+}
+
+.schedule-teacher strong {
+    font-size: 13px;
+    font-weight: 500;
+    color: #424245;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* ========================================
+   STUDENTS
+   ======================================== */
+
+.schedule-capacity {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.schedule-capacity strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+
+/* ========================================
+   RESPONSIVE — TABLET
+   ======================================== */
+
+@media (max-width: 1000px) {
+
+    .dashboard-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ========================================
+   RESPONSIVE — SMALL TABLET
+   ======================================== */
+
+@media (max-width: 900px) {
+
+    .schedule-header {
+        grid-template-columns:
+            65px
+            minmax(90px, 1fr)
+            42px
+            80px
+            55px;
+
+        padding: 10px 12px;
+    }
+
+    .schedule-item {
+        grid-template-columns:
+            65px
+            minmax(90px, 1fr)
+            42px
+            80px
+            55px;
+
+        padding: 0 12px;
+    }
+
+    .schedule-time strong,
+    .schedule-subject strong,
+    .schedule-class strong,
+    .schedule-teacher strong,
+    .schedule-capacity strong {
+        font-size: 12px;
+    }
+}
+
+
+/* ========================================
+   RESPONSIVE — MOBILE
+   ======================================== */
+
+@media (max-width: 650px) {
+
+    .dashboard-header h1 {
+        font-size: 27px;
+    }
+
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        min-height: 100px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-section {
+        width: 100%;
+    }
+
+    /*
+       Keep all five schedule columns visible.
+       Allow horizontal scrolling instead of
+       hiding important information.
+    */
+
+    .schedule-list {
+        overflow-x: auto;
+    }
+
+    .schedule-header,
+    .schedule-item {
+        min-width: 430px;
+    }
+
+    .schedule-header {
+        grid-template-columns:
+            65px
+            120px
+            45px
+            100px
+            60px;
+    }
+
+    .schedule-item {
+        grid-template-columns:
+            65px
+            120px
+            45px
+            100px
+            60px;
+    }
+
+    .section-header {
+        padding: 16px;
+    }
+}

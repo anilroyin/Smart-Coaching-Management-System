@@ -1,0 +1,353 @@
+/* ========================================
+   SCMS — SETTINGS PAGE
+   Apple-inspired design
+   ======================================== */
+
+.settings-page {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    color: #1d1d1f;
+}
+
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.settings-header {
+    margin-bottom: 28px;
+}
+
+.settings-header h1 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.8px;
+    color: #1d1d1f;
+}
+
+.settings-header p {
+    margin: 6px 0 0;
+    color: #86868b;
+    font-size: 14px;
+}
+
+
+/* ========================================
+   MESSAGES
+   ======================================== */
+
+.settings-error,
+.settings-success {
+    margin-bottom: 20px;
+    padding: 12px 14px;
+    border-radius: 9px;
+    font-size: 14px;
+}
+
+.settings-error {
+    border: 1px solid #f0caca;
+    background: #fff5f5;
+    color: #b42318;
+}
+
+.settings-success {
+    border: 1px solid #cce8d3;
+    background: #f1faf3;
+    color: #267a3d;
+}
+
+
+/* ========================================
+   SETTINGS CARD
+   ======================================== */
+
+.settings-card {
+    width: 100%;
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e5e7;
+    border-radius: 14px;
+
+    overflow: hidden;
+}
+
+
+/* ========================================
+   CARD HEADER
+   ======================================== */
+
+.settings-card-header {
+    padding: 20px;
+
+    border-bottom: 1px solid #e5e5e7;
+}
+
+.settings-card-header h2 {
+    margin: 0;
+
+    font-size: 19px;
+    font-weight: 600;
+
+    color: #1d1d1f;
+}
+
+.settings-card-header p {
+    margin: 5px 0 0;
+
+    color: #86868b;
+    font-size: 13px;
+}
+
+
+/* ========================================
+   FORM
+   ======================================== */
+
+.settings-form {
+    padding: 24px 20px;
+}
+
+
+/* ========================================
+   FIELD
+   ======================================== */
+
+.settings-field {
+    width: 100%;
+    max-width: 420px;
+
+    display: flex;
+    flex-direction: column;
+
+    text-align: left;
+}
+
+.settings-field label {
+    margin-bottom: 7px;
+
+    color: #424245;
+
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.settings-field small {
+    margin-top: 7px;
+
+    color: #86868b;
+
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+
+/* ========================================
+   PERCENTAGE INPUT
+   ======================================== */
+
+.settings-percentage-input {
+    width: 220px;
+
+    display: flex;
+    align-items: center;
+
+    box-sizing: border-box;
+
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.settings-percentage-input:focus-within {
+    border-color: #0071e3;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(0, 113, 227, 0.12);
+}
+
+.settings-percentage-input input {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 10px 12px;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    color: #1d1d1f;
+
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.settings-percentage-input span {
+    padding-right: 12px;
+
+    color: #86868b;
+
+    font-size: 14px;
+    font-weight: 500;
+}
+
+
+/* ========================================
+   REMOVE NUMBER ARROWS
+   ======================================== */
+
+.settings-percentage-input input::-webkit-outer-spin-button,
+.settings-percentage-input input::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+}
+
+
+/* ========================================
+   PAYMENT EXAMPLE
+   ======================================== */
+
+.settings-payment-example {
+    width: 100%;
+    max-width: 600px;
+
+    margin-top: 24px;
+
+    padding: 0;
+
+    background: #ffffff;
+
+    border-top: 1px solid #e5e5e7;
+}
+
+.settings-payment-example > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 13px 0;
+
+    border-bottom: 1px solid #f0f0f2;
+}
+
+.settings-payment-example span {
+    color: #86868b;
+    font-size: 13px;
+}
+
+.settings-payment-example strong {
+    color: #1d1d1f;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+
+/* ========================================
+   ACTIONS
+   ======================================== */
+
+.settings-actions {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 24px;
+    padding-top: 18px;
+
+    border-top: 1px solid #f0f0f2;
+}
+
+.settings-save-button {
+    border: none;
+    border-radius: 9px;
+
+    padding: 10px 17px;
+
+    background: #0071e3;
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+}
+
+.settings-save-button:hover {
+    background: #0077ed;
+}
+
+.settings-save-button:disabled {
+    background: #d2d2d7;
+    color: #86868b;
+    cursor: not-allowed;
+}
+
+
+/* ========================================
+   LOADING
+   ======================================== */
+
+.settings-loading {
+    min-height: 300px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #86868b;
+    font-size: 14px;
+}
+
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 800px) {
+
+    .settings-header h1 {
+        font-size: 30px;
+    }
+
+    .settings-percentage-input {
+        width: 100%;
+        max-width: 220px;
+    }
+}
+
+
+@media (max-width: 500px) {
+
+    .settings-header h1 {
+        font-size: 28px;
+    }
+
+    .settings-card-header {
+        padding: 18px;
+    }
+
+    .settings-form {
+        padding: 20px 18px;
+    }
+
+    .settings-actions {
+        justify-content: stretch;
+    }
+
+    .settings-save-button {
+        width: 100%;
+    }
+}
