@@ -66,3 +66,58 @@ export const assignTeacherToCourse = async (req, res) => {
         });
     }
 };
+
+// =====================================================
+// GET COURSES ASSIGNED TO A TEACHER
+// =====================================================
+
+export const getCoursesByTeacher = async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+
+        // Validate teacher ID
+        if (!mongoose.Types.ObjectId.isValid(teacherId)) {
+            return res.status(400).json({
+                message: "Invalid teacher ID"
+            });
+        }
+
+        // Check teacher exists
+        const teacher = await Teacher.findById(teacherId);
+
+        if (!teacher) {
+            return res.status(404).json({
+                message: "Teacher not found"
+            });
+        }
+
+        // Get courses assigned to teacher
+        const assignments = await CourseTeacher.find({
+            teacher: teacherId,
+            status: "active"
+        }).populate(
+            "course",
+            "name class monthlyFee status"
+        );
+
+        res.status(200).json({
+            message:
+                "Teacher courses fetched successfully",
+
+            count: assignments.length,
+
+            courses: assignments
+        });
+
+    } catch (error) {
+        console.error(
+            "GET TEACHER COURSES ERROR:",
+            error
+        );
+
+        res.status(500).json({
+            message:
+                "Failed to fetch teacher courses"
+        });
+    }
+};
