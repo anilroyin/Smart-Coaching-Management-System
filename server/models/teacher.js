@@ -31,9 +31,23 @@ const teacherSchema = new mongoose.Schema(
             type: Date
         },
 
+        dateOfBirth: {
+            type: Date
+        },
+
+        address: {
+            type: String,
+            trim: true
+        },
+
+        monthlyPayment: {
+            type: Number,
+            min: 0
+        },
+
         status: {
             type: String,
-            enum: ["active", "inactive"],
+            enum: ["active", "paused", "inactive"],
             default: "active"
         }
     },
