@@ -1,49 +1,51 @@
 import express from "express";
 
-import { createEnrollment,
-        getEnrollments,
-        getEnrollmentById,
-        pauseEnrollment,
-        resumeEnrollment
+import {
+    createEnrollment,
+    getEnrollments,
+    getEnrollmentById,
+    pauseEnrollment,
+    resumeEnrollment
 } from "../controllers/enrollmentController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("enrollments"),
     createEnrollment
 );
 
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("enrollments"),
     getEnrollments
 );
 
 router.get(
     "/:id",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("enrollments"),
     getEnrollmentById
 );
 
 router.patch(
     "/:id/pause",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("enrollments"),
     pauseEnrollment
 );
 
 router.patch(
     "/:id/resume",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("enrollments"),
     resumeEnrollment
 );
+
 export default router;
