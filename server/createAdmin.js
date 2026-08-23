@@ -1,6 +1,5 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
-import mongoose from "mongoose";
 import connectDB from "./config/db.js";
 import User from "./models/user.js";
 
@@ -8,26 +7,55 @@ const createAdmin = async () => {
     try {
         await connectDB();
 
-        const existingAdmin = await User.findOne({ role: "admin" });
+        const adminEmail = process.env.ADMIN_EMAIL;
 
-        if (existingAdmin) {
-            console.log("Admin account already exists");
-            process.exit();
+        // Check whether the Main Admin account already exists
+        const existingUser = await User.findOne({
+            email: adminEmail
+        });
+
+        if (existingUser) {
+
+            // Make sure the configured main admin is actually
+            // the Super Admin
+            if (existingUser.role !== "super_admin") {
+                existingUser.role = "super_admin";
+                existingUser.isActive = true;
+
+                await existingUser.save();
+
+                console.log("Existing account promoted to Super Admin");
+            } else {
+                console.log("Super Admin account already exists");
+            }
+
+            process.exit(0);
         }
 
-        const password = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+        // Create password only when creating a new account
+        const password = await bcrypt.hash(
+            process.env.ADMIN_PASSWORD,
+            10
+        );
 
         await User.create({
             name: process.env.ADMIN_NAME,
-            email: process.env.ADMIN_EMAIL,
+            email: adminEmail,
             password,
-            role: "admin"
+            role: "super_admin",
+            isActive: true
         });
 
-        console.log("Admin account created");
-        process.exit();
+        console.log("Super Admin account created");
+
+        process.exit(0);
+
     } catch (error) {
-        console.error("Failed to create admin:", error.message);
+        console.error(
+            "Failed to create Super Admin:",
+            error.message
+        );
+
         process.exit(1);
     }
 };

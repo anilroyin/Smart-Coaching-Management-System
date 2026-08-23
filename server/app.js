@@ -1,13 +1,21 @@
 import express from "express";
-import authRoutes from "./routes/authRoutes.js";
+import cors from "cors";
+import authRoutes from "./routes/userAuthRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import teacherRoutes from "./routes/teacherRoutes.js";
 import courseTeacherRoutes from "./routes/courseTeacherRoutes.js";
 import enrollmentRoutes from "./routes/enrollmentRoutes.js";
 import teachingSlotRoutes from "./routes/teachingSlotRoutes.js";
-
+import adminRoutes from "./routes/adminRoutes.js";
+import paymentRoutes from "./routes/studentFeeRoutes.js";
+import settingsRoutes from "./routes/settingsRoutes.js";
 const app = express();
+app.use(
+    cors({
+        origin: "http://localhost:5173"
+    })
+);
 
 app.use(express.json());
 
@@ -17,6 +25,9 @@ app.use("/api/teachers", teacherRoutes);
 app.use("/api/course-teachers", courseTeacherRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/teaching-slots", teachingSlotRoutes);
+app.use("/api/admins", adminRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/settings", settingsRoutes);
 
 app.get("/", (req, res) => {
     res.send("SCMS API is running");
