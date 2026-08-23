@@ -1,24 +1,26 @@
 import express from "express";
-import { createCourse,
-         getCourses
 
+import {
+    createCourse,
+    getCourses
 } from "../controllers/courseController.js";
+
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("courses"),
     createCourse
 );
 
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("courses"),
     getCourses
 );
 
