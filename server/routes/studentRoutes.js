@@ -9,21 +9,21 @@ import {
 } from "../controllers/studentController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
 router.post(
     "/",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("students"),
     createStudent
 );
 
 router.get(
     "/",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("students"),
     getStudents
 );
 
@@ -31,22 +31,23 @@ router.get(
 router.get(
     "/:id",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("students"),
     getStudentById
 );
-//update a student
+
+// Update a student
 router.put(
     "/:id",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("students"),
     updateStudent
 );
 
 router.patch(
     "/:id/status",
     authMiddleware,
-    roleMiddleware("admin"),
+    permissionMiddleware("students"),
     updateStudentStatus
-); 
+);
 
 export default router;
