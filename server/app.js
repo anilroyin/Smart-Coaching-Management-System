@@ -10,6 +10,7 @@ import teachingSlotRoutes from "./routes/teachingSlotRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/studentFeeRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import teacherPaymentRoutes from "./routes/teacherPaymentRoutes.js";
 const app = express();
 app.use(
     cors({
@@ -28,6 +29,7 @@ app.use("/api/teaching-slots", teachingSlotRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/teacher-payments",teacherPaymentRoutes);
 
 app.get("/", (req, res) => {
     res.send("SCMS API is running");
