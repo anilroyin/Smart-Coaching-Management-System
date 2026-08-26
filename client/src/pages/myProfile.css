@@ -1,0 +1,165 @@
+/* =====================================================
+   MY PROFILE
+   ===================================================== */
+
+.my-profile-page {
+    width: 100%;
+}
+
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+
+.my-profile-header {
+    margin-bottom: 28px;
+}
+
+
+.my-profile-header h1 {
+    margin: 0;
+
+    font-size: 32px;
+    font-weight: 600;
+
+    letter-spacing: -0.8px;
+
+    color: #1d1d1f;
+}
+
+
+.my-profile-header p {
+    margin: 8px 0 0;
+
+    font-size: 15px;
+
+    color: #6e6e73;
+}
+
+
+/* =====================================================
+   PROFILE CARD
+   ===================================================== */
+
+.my-profile-card {
+    background: #ffffff;
+
+    border: 1px solid #e5e5e7;
+
+    border-radius: 12px;
+
+    overflow: hidden;
+}
+
+
+.my-profile-card-header {
+    padding: 20px 24px;
+
+    border-bottom: 1px solid #e5e5e7;
+}
+
+
+.my-profile-card-header h2 {
+    margin: 0;
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    color: #1d1d1f;
+}
+
+
+/* =====================================================
+   INFORMATION
+   ===================================================== */
+
+.my-profile-information {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 0;
+}
+
+
+.my-profile-field {
+    min-height: 76px;
+
+    padding: 18px 24px;
+
+    box-sizing: border-box;
+
+    border-bottom: 1px solid #f0f0f2;
+}
+
+
+.my-profile-field:nth-child(odd) {
+    border-right: 1px solid #f0f0f2;
+}
+
+
+.my-profile-field span {
+    display: block;
+
+    margin-bottom: 7px;
+
+    font-size: 13px;
+
+    color: #86868b;
+}
+
+
+.my-profile-field strong {
+    display: block;
+
+    font-size: 15px;
+
+    font-weight: 500;
+
+    color: #1d1d1f;
+}
+
+
+/* =====================================================
+   LOADING / ERROR
+   ===================================================== */
+
+.my-profile-loading,
+.my-profile-error {
+    padding: 40px;
+
+    text-align: center;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e5e7;
+
+    border-radius: 12px;
+
+    color: #6e6e73;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 700px) {
+
+    .my-profile-information {
+        grid-template-columns: 1fr;
+    }
+
+
+    .my-profile-field:nth-child(odd) {
+        border-right: none;
+    }
+
+
+    .my-profile-header h1 {
+        font-size: 28px;
+    }
+
+}
