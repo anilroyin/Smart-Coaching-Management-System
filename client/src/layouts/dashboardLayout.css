@@ -1,0 +1,441 @@
+/* =====================================================
+   DASHBOARD LAYOUT
+   Shared by:
+   Super Admin
+   Admin
+   Teacher
+   Student
+   ===================================================== */
+
+
+/* =====================================================
+   MAIN LAYOUT
+   ===================================================== */
+
+.dashboard-layout {
+    display: flex;
+
+    min-height: 100vh;
+
+    width: 100%;
+
+    background-color: #f5f5f7;
+
+    color: #1d1d1f;
+}
+
+
+/* =====================================================
+   SIDEBAR
+   ===================================================== */
+
+.dashboard-sidebar {
+    width: 250px;
+
+    min-height: 100vh;
+
+    flex-shrink: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: #ffffff;
+
+    border-right: 1px solid #e5e5e7;
+
+    box-sizing: border-box;
+
+    padding: 0 12px 12px;
+}
+
+
+/* =====================================================
+   SIDEBAR LOGO
+   ===================================================== */
+
+.dashboard-sidebar-logo {
+    height: 108px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    border-bottom: 1px solid #e5e5e7;
+
+    margin-bottom: 18px;
+}
+
+
+.dashboard-sidebar-logo h1 {
+    margin: 0;
+
+    font-size: 26px;
+
+    font-weight: 600;
+
+    letter-spacing: -0.5px;
+
+    color: #1d1d1f;
+}
+
+
+.dashboard-sidebar-logo p {
+    margin: 8px 0 0;
+
+    font-size: 13px;
+
+    color: #6e6e73;
+}
+
+
+/* =====================================================
+   NAVIGATION
+   ===================================================== */
+
+.dashboard-navigation {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+
+    width: 100%;
+}
+
+
+/* =====================================================
+   NAVIGATION LINK
+   ===================================================== */
+
+.dashboard-nav-link {
+    display: flex;
+
+    align-items: center;
+
+    width: 100%;
+
+    min-height: 46px;
+
+    padding: 0 14px;
+
+    box-sizing: border-box;
+
+    border-radius: 9px;
+
+    text-decoration: none;
+
+    font-size: 14px;
+
+    font-weight: 500;
+
+    color: #1d1d1f;
+
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+
+.dashboard-nav-link:hover {
+    background-color: #f2f2f4;
+}
+
+
+.dashboard-nav-link.active {
+    background-color: #eeeeF0;
+
+    color: #0071e3;
+
+    font-weight: 600;
+}
+
+
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+
+.dashboard-logout {
+    width: 100%;
+
+    min-height: 46px;
+
+    margin-top: auto;
+
+    padding: 0 14px;
+
+    background-color: #ffffff;
+
+    border: 1px solid #d2d2d7;
+
+    border-radius: 9px;
+
+    font-size: 14px;
+
+    font-weight: 500;
+
+    color: #1d1d1f;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+
+.dashboard-logout:hover {
+    background-color: #f5f5f7;
+
+    border-color: #b8b8bd;
+}
+
+
+/* =====================================================
+   MAIN AREA
+   ===================================================== */
+
+.dashboard-main {
+    flex: 1;
+
+    min-width: 0;
+
+    min-height: 100vh;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+
+.dashboard-header {
+    height: 64px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 26px;
+
+    box-sizing: border-box;
+
+    background-color: #ffffff;
+
+    border-bottom: 1px solid #e5e5e7;
+}
+
+
+.dashboard-header h2 {
+    margin: 0;
+
+    font-size: 17px;
+
+    font-weight: 600;
+
+    color: #1d1d1f;
+}
+
+
+.dashboard-header-user {
+    font-size: 14px;
+
+    font-weight: 500;
+
+    color: #6e6e73;
+}
+
+
+/* =====================================================
+   PAGE CONTENT
+   ===================================================== */
+
+.dashboard-content {
+    flex: 1;
+
+    padding: 32px;
+
+    box-sizing: border-box;
+
+    overflow-x: auto;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 800px) {
+
+    .dashboard-sidebar {
+        width: 210px;
+    }
+
+    .dashboard-content {
+        padding: 24px;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .dashboard-layout {
+        flex-direction: column;
+    }
+
+
+    .dashboard-sidebar {
+        width: 100%;
+
+        min-height: auto;
+
+        border-right: none;
+
+        border-bottom: 1px solid #e5e5e7;
+
+        padding-bottom: 12px;
+    }
+
+
+    .dashboard-sidebar-logo {
+        height: 82px;
+
+        margin-bottom: 10px;
+    }
+
+
+    .dashboard-navigation {
+        flex-direction: row;
+
+        flex-wrap: wrap;
+    }
+
+
+    .dashboard-nav-link {
+        width: auto;
+
+        padding: 0 14px;
+    }
+
+
+    .dashboard-logout {
+        margin-top: 12px;
+    }
+
+
+    .dashboard-header {
+        height: 58px;
+
+        padding: 0 18px;
+    }
+
+
+    .dashboard-content {
+        padding: 20px;
+    }
+
+}
+/* =====================================================
+   HEADER TITLE
+   ===================================================== */
+
+.dashboard-header-title {
+    min-width: 0;
+}
+
+.dashboard-header-title h2 {
+    margin: 0;
+}
+
+
+/* =====================================================
+   HEADER USER AREA
+   ===================================================== */
+
+.dashboard-header-user {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+
+/* =====================================================
+   NOTIFICATION BUTTON
+   ===================================================== */
+
+.dashboard-notification {
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.dashboard-notification:hover {
+    background-color: #f5f5f7;
+    border-color: #e5e5e7;
+}
+
+.dashboard-notification-icon {
+    font-size: 17px;
+    line-height: 1;
+}
+
+
+/* =====================================================
+   USER NAME
+   ===================================================== */
+
+.dashboard-user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1d1d1f;
+    white-space: nowrap;
+}
+
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 650px) {
+
+    .dashboard-header-user {
+        gap: 8px;
+    }
+
+    .dashboard-notification {
+        width: 34px;
+        height: 34px;
+    }
+
+    .dashboard-user-name {
+        max-width: 120px;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+}
