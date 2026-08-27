@@ -1,0 +1,186 @@
+/* ========================================
+   TEACHER PAYMENTS
+   ======================================== */
+
+.teacher-payments-page {
+    width: 100%;
+}
+
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.teacher-payments-header {
+    margin-bottom: 28px;
+}
+
+.teacher-payments-header h1 {
+    margin: 0;
+
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.8px;
+
+    color: #1d1d1f;
+}
+
+.teacher-payments-header p {
+    margin: 8px 0 0;
+
+    font-size: 15px;
+
+    color: #6e6e73;
+}
+
+
+/* ========================================
+   CARD
+   ======================================== */
+
+.teacher-payments-card {
+    background: #ffffff;
+
+    border: 1px solid #e5e5e7;
+    border-radius: 14px;
+
+    overflow: hidden;
+}
+
+
+/* ========================================
+   TABLE
+   ======================================== */
+
+.teacher-payments-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.teacher-payments-row {
+    min-width: 650px;
+
+    display: grid;
+
+    grid-template-columns:
+        1.2fr
+        1fr
+        1.2fr
+        1fr
+        0.8fr;
+
+    align-items: center;
+
+    min-height: 64px;
+
+    padding: 0 20px;
+
+    border-bottom: 1px solid #e5e5e7;
+
+    box-sizing: border-box;
+}
+
+.teacher-payments-row:last-child {
+    border-bottom: none;
+}
+
+.teacher-payments-row > span {
+    font-size: 14px;
+    color: #424245;
+}
+
+
+/* ========================================
+   TABLE HEADER
+   ======================================== */
+
+.teacher-payments-header-row {
+    min-height: 48px;
+
+    background: #fafafa;
+}
+
+.teacher-payments-header-row > span {
+    font-size: 12px;
+    font-weight: 500;
+
+    color: #86868b;
+}
+
+
+/* ========================================
+   AMOUNT
+   ======================================== */
+
+.payment-amount {
+    font-weight: 600;
+    color: #1d1d1f !important;
+}
+
+
+/* ========================================
+   STATUS
+   ======================================== */
+
+.payment-status {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 58px;
+
+    padding: 6px 10px;
+
+    border-radius: 999px;
+
+    font-size: 12px !important;
+    font-weight: 500;
+}
+
+.payment-status.paid {
+    background: #eaf8ef;
+    color: #18864b !important;
+}
+
+.payment-status.due {
+    background: #fff4e5;
+    color: #a15c00 !important;
+}
+
+
+/* ========================================
+   EMPTY
+   ======================================== */
+
+.teacher-payments-empty {
+    min-height: 220px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    font-size: 14px;
+    color: #86868b;
+
+    text-align: center;
+}
+
+
+/* ========================================
+   MOBILE
+   ======================================== */
+
+@media (max-width: 650px) {
+
+    .teacher-payments-header h1 {
+        font-size: 27px;
+    }
+
+    .teacher-payments-row {
+        padding: 0 14px;
+    }
+
+}
