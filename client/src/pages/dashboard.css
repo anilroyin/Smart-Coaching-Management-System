@@ -1,6 +1,6 @@
 /* ========================================
    SCMS DASHBOARD
-   APPLE-INSPIRED ADMIN UI
+   APPLE-INSPIRED UI
    ======================================== */
 
 .dashboard {
@@ -48,12 +48,14 @@
 }
 
 .stat-card {
+    min-height: 115px;
+    padding: 22px;
+
+    box-sizing: border-box;
+
     background: #ffffff;
     border: 1px solid #e5e5e7;
     border-radius: 14px;
-    padding: 22px;
-    min-height: 115px;
-    box-sizing: border-box;
 
     transition:
         transform 0.2s ease,
@@ -66,9 +68,10 @@
 }
 
 .stat-card-label {
+    margin-bottom: 14px;
+
     font-size: 14px;
     color: #6e6e73;
-    margin-bottom: 14px;
 }
 
 .stat-card-value {
@@ -86,7 +89,7 @@
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
 }
 
@@ -96,9 +99,12 @@
    ======================================== */
 
 .dashboard-section {
+    min-width: 0;
+
     background: #ffffff;
     border: 1px solid #e5e5e7;
     border-radius: 14px;
+
     overflow: hidden;
 }
 
@@ -108,17 +114,18 @@
    ======================================== */
 
 .section-header {
-    padding: 18px 20px;
-
-    border-bottom: 1px solid #e5e5e7;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
+
+    padding: 18px 20px;
+
+    border-bottom: 1px solid #e5e5e7;
 }
 
 .section-header h2 {
     margin: 0;
+
     font-size: 16px;
     font-weight: 600;
     color: #1d1d1f;
@@ -136,18 +143,20 @@
 
 .empty-state {
     min-height: 180px;
+    padding: 20px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    padding: 20px;
+    box-sizing: border-box;
 }
 
 .empty-state p {
     margin: 0;
 
     font-size: 14px;
+    line-height: 1.5;
     color: #86868b;
 
     text-align: center;
@@ -155,10 +164,12 @@
 
 
 /* ========================================
-   TODAY'S SCHEDULE
+   SCHEDULE LIST
    ======================================== */
 
 .schedule-list {
+    width: 100%;
+
     display: flex;
     flex-direction: column;
 }
@@ -166,35 +177,28 @@
 
 /* ========================================
    SCHEDULE HEADER
-
-   Time | Subject | Class | Teacher | Students
    ======================================== */
 
 .schedule-header {
     display: grid;
-
-    grid-template-columns:
-        68px
-        minmax(100px, 1fr)
-        45px
-        90px
-        55px;
-
     align-items: center;
 
     padding: 10px 14px;
 
     background: #fafafa;
-
     border-bottom: 1px solid #e5e5e7;
 
     box-sizing: border-box;
 }
 
 .schedule-header span {
+    min-width: 0;
+
     font-size: 10px;
     font-weight: 500;
     color: #86868b;
+
+    white-space: nowrap;
 }
 
 
@@ -204,18 +208,9 @@
 
 .schedule-item {
     display: grid;
-
-    grid-template-columns:
-        68px
-        minmax(100px, 1fr)
-        45px
-        90px
-        55px;
-
     align-items: center;
 
     min-height: 64px;
-
     padding: 0 14px;
 
     border-bottom: 1px solid #e5e5e7;
@@ -232,10 +227,16 @@
    TIME
    ======================================== */
 
+.schedule-time {
+    min-width: 0;
+}
+
 .schedule-time strong {
     font-size: 13px;
     font-weight: 600;
     color: #1d1d1f;
+
+    white-space: nowrap;
 }
 
 
@@ -248,9 +249,15 @@
 }
 
 .schedule-subject strong {
+    display: block;
+
     font-size: 13px;
     font-weight: 600;
     color: #1d1d1f;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 
@@ -259,6 +266,8 @@
    ======================================== */
 
 .schedule-class {
+    min-width: 0;
+
     display: flex;
     flex-direction: column;
 }
@@ -267,6 +276,10 @@
     font-size: 13px;
     font-weight: 600;
     color: #1d1d1f;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 
@@ -279,6 +292,8 @@
 }
 
 .schedule-teacher strong {
+    display: block;
+
     font-size: 13px;
     font-weight: 500;
     color: #424245;
@@ -290,10 +305,12 @@
 
 
 /* ========================================
-   STUDENTS
+   STUDENTS / CAPACITY
    ======================================== */
 
 .schedule-capacity {
+    min-width: 0;
+
     text-align: right;
     white-space: nowrap;
 }
@@ -306,13 +323,13 @@
 
 
 /* ========================================
-   RESPONSIVE — TABLET
+   TABLET
    ======================================== */
 
 @media (max-width: 1000px) {
 
     .dashboard-stats {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .dashboard-grid {
@@ -322,31 +339,15 @@
 
 
 /* ========================================
-   RESPONSIVE — SMALL TABLET
+   SMALL TABLET
    ======================================== */
 
 @media (max-width: 900px) {
 
-    .schedule-header {
-        grid-template-columns:
-            65px
-            minmax(90px, 1fr)
-            42px
-            80px
-            55px;
-
-        padding: 10px 12px;
-    }
-
+    .schedule-header,
     .schedule-item {
-        grid-template-columns:
-            65px
-            minmax(90px, 1fr)
-            42px
-            80px
-            55px;
-
-        padding: 0 12px;
+        padding-left: 12px;
+        padding-right: 12px;
     }
 
     .schedule-time strong,
@@ -360,10 +361,14 @@
 
 
 /* ========================================
-   RESPONSIVE — MOBILE
+   MOBILE
    ======================================== */
 
 @media (max-width: 650px) {
+
+    .dashboard-header {
+        margin-bottom: 22px;
+    }
 
     .dashboard-header h1 {
         font-size: 27px;
@@ -371,14 +376,17 @@
 
     .dashboard-stats {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .stat-card {
         min-height: 100px;
+        padding: 20px;
     }
 
     .dashboard-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 
     .dashboard-section {
@@ -386,13 +394,13 @@
     }
 
     /*
-       Keep all five schedule columns visible.
-       Allow horizontal scrolling instead of
-       hiding important information.
+       Schedule tables remain horizontally scrollable
+       instead of hiding important columns.
     */
 
     .schedule-list {
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .schedule-header,
@@ -400,25 +408,33 @@
         min-width: 430px;
     }
 
-    .schedule-header {
-        grid-template-columns:
-            65px
-            120px
-            45px
-            100px
-            60px;
-    }
-
+    .schedule-header,
     .schedule-item {
-        grid-template-columns:
-            65px
-            120px
-            45px
-            100px
-            60px;
+        padding-left: 12px;
+        padding-right: 12px;
     }
 
     .section-header {
         padding: 16px;
+    }
+}
+
+
+/* ========================================
+   VERY SMALL MOBILE
+   ======================================== */
+
+@media (max-width: 400px) {
+
+    .dashboard-header h1 {
+        font-size: 25px;
+    }
+
+    .stat-card {
+        padding: 18px;
+    }
+
+    .stat-card-value {
+        font-size: 28px;
     }
 }
