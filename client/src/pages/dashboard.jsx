@@ -1,60 +1,259 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./dashboard.css";
 
-function Dashboard() {
-    const user = JSON.parse(
-        localStorage.getItem("user")
+const API = "http://localhost:3000/api";
+
+
+// =====================================================
+// HELPERS
+// =====================================================
+
+const getUser = () => {
+    try {
+        return JSON.parse(localStorage.getItem("user"));
+    } catch {
+        return null;
+    }
+};
+
+
+const getToken = () => {
+    return localStorage.getItem("token");
+};
+
+
+const fetchData = async (url, token) => {
+
+    const response = await fetch(`${API}${url}`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.message || "Failed to fetch data"
+        );
+    }
+
+    return data;
+};
+
+
+const getToday = () => {
+    return new Date().toLocaleDateString("en-IN", {
+        weekday: "long",
+        timeZone: "Asia/Kolkata"
+    });
+};
+
+
+const formatTime = (time) => {
+
+    if (!time) {
+        return "N/A";
+    }
+
+    const [hours, minutes] = time.split(":");
+
+    const date = new Date();
+
+    date.setHours(
+        Number(hours),
+        Number(minutes),
+        0,
+        0
     );
 
-    const token = localStorage.getItem("token");
+    return date.toLocaleTimeString("en-IN", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+    });
+};
 
-    const isSuperAdmin = user?.role === "super_admin";
-    const permissions = user?.permissions || {};
+
+const getCount = (data, key) => {
+
+    if (typeof data?.count === "number") {
+        return data.count;
+    }
+
+    if (Array.isArray(data?.[key])) {
+        return data[key].length;
+    }
+
+    return 0;
+};
+
+
+// =====================================================
+// STAT CARD
+// =====================================================
+
+function StatCard({ label, value }) {
+
+    return (
+        <div className="stat-card">
+
+            <div className="stat-card-label">
+                {label}
+            </div>
+
+            <div className="stat-card-value">
+                {value}
+            </div>
+
+        </div>
+    );
+}
+
+
+// =====================================================
+// EMPTY STATE
+// =====================================================
+
+function EmptyState({ message }) {
+
+    return (
+        <div className="empty-state">
+            <p>
+                {message}
+            </p>
+        </div>
+    );
+}
+
+
+// =====================================================
+// SCHEDULE TABLE
+// =====================================================
+
+function ScheduleTable({
+    slots,
+    columns,
+    emptyMessage
+}) {
+
+    if (!slots.length) {
+        return (
+            <EmptyState
+                message={
+                    emptyMessage ||
+                    "No classes scheduled."
+                }
+            />
+        );
+    }
+
+
+    return (
+
+        <div className="schedule-list">
+
+            {/* Header */}
+
+            <div
+                className="schedule-header"
+                style={{
+                    gridTemplateColumns:
+                        columns.grid
+                }}
+            >
+
+                {columns.headers.map(
+                    (header) => (
+                        <span key={header}>
+                            {header}
+                        </span>
+                    )
+                )}
+
+            </div>
+
+
+            {/* Rows */}
+
+            {slots.map((slot) => (
+
+                <div
+                    className="schedule-item"
+                    style={{
+                        gridTemplateColumns:
+                            columns.grid
+                    }}
+                    key={slot._id}
+                >
+
+                    {columns.render(slot)}
+
+                </div>
+
+            ))}
+
+        </div>
+    );
+}
+
+
+// =====================================================
+// DASHBOARD
+// =====================================================
+
+function Dashboard() {
+
+    const user = getUser();
+    const token = getToken();
+
+    const role = user?.role;
+
+
+    const isSuperAdmin =
+        role === "super_admin";
+
+    const isAdmin =
+        role === "admin";
+
+    const isTeacher =
+        role === "teacher";
+
+    const isStudent =
+        role === "student";
+
+
+    // =================================================
+    // PERMISSIONS
+    //
+    // Permissions are stored as an object:
+    //
+    // {
+    //     students: true,
+    //     teachers: true,
+    //     courses: false,
+    //     teachingSlots: true
+    // }
+    //
+    // =================================================
 
     const hasPermission = (permission) => {
-        return (
-            isSuperAdmin ||
-            permissions[permission] === true
-        );
-    };
 
-
-    // ========================================
-    // FORMAT TIME
-    // Converts 17:30 → 5:30 PM
-    // ========================================
-
-    const formatTime = (time) => {
-        if (!time) {
-            return "N/A";
+        if (isSuperAdmin) {
+            return true;
         }
 
-        const [hours, minutes] = time.split(":");
+        if (!isAdmin) {
+            return false;
+        }
 
-        const date = new Date();
-
-        date.setHours(
-            Number(hours),
-            Number(minutes),
-            0,
-            0
-        );
-
-        return date.toLocaleTimeString(
-            "en-IN",
-            {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-                timeZone: "Asia/Kolkata"
-            }
-        );
+        return user?.permissions?.[permission] === true;
     };
 
 
-    // ========================================
-    // DASHBOARD STATE
-    // ========================================
+    // =================================================
+    // ADMIN STATE
+    // =================================================
 
     const [stats, setStats] = useState({
         students: 0,
@@ -63,114 +262,108 @@ function Dashboard() {
         enrollments: 0
     });
 
-    const [todaySchedule, setTodaySchedule] = useState([]);
-
-    const [loading, setLoading] = useState(true);
-    const [scheduleLoading, setScheduleLoading] = useState(true);
+    const [adminLoading, setAdminLoading] =
+        useState(false);
 
 
-    // ========================================
-    // GET COUNT FROM API RESPONSE
-    // ========================================
+    const [todaySchedule, setTodaySchedule] =
+        useState([]);
 
-    const getCount = (data, type) => {
-        if (typeof data.count === "number") {
-            return data.count;
-        }
-
-        if (Array.isArray(data[type])) {
-            return data[type].length;
-        }
-
-        return 0;
-    };
+    const [scheduleLoading, setScheduleLoading] =
+        useState(false);
 
 
-    // ========================================
-    // LOAD DASHBOARD STATISTICS
-    // ========================================
+    // =================================================
+    // TEACHER STATE
+    // =================================================
+
+    const [teacherSlots, setTeacherSlots] =
+        useState([]);
+
+    const [teacherLoading, setTeacherLoading] =
+        useState(false);
+
+    const [teacherError, setTeacherError] =
+        useState("");
+
+
+    // =================================================
+    // ADMIN / SUPER ADMIN DATA
+    // =================================================
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
+
+        if (!isAdmin && !isSuperAdmin) {
+            return;
+        }
+
+
+        const loadAdminData = async () => {
+
+            setAdminLoading(true);
+
             try {
-                const requests = [];
+
+                const resources = [
+                    {
+                        key: "students",
+                        url: "/students"
+                    },
+                    {
+                        key: "teachers",
+                        url: "/teachers"
+                    },
+                    {
+                        key: "courses",
+                        url: "/courses"
+                    },
+                    {
+                        key: "enrollments",
+                        url: "/enrollments"
+                    }
+                ];
 
 
-                // Students
-                if (hasPermission("students")) {
-                    requests.push(
-                        fetch(
-                            "http://localhost:3000/api/students",
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`
+                const permittedResources =
+                    resources.filter(
+                        ({ key }) =>
+                            hasPermission(key)
+                    );
+
+
+                const results =
+                    await Promise.all(
+                        permittedResources.map(
+                            async ({ key, url }) => {
+
+                                try {
+
+                                    const data =
+                                        await fetchData(
+                                            url,
+                                            token
+                                        );
+
+                                    return {
+                                        key,
+                                        data
+                                    };
+
+                                } catch (error) {
+
+                                    console.error(
+                                        `Failed to load ${key}:`,
+                                        error
+                                    );
+
+                                    return {
+                                        key,
+                                        data: null
+                                    };
                                 }
                             }
-                        ).then(async (response) => ({
-                            type: "students",
-                            data: await response.json()
-                        }))
+                        )
                     );
-                }
-
-
-                // Teachers
-                if (hasPermission("teachers")) {
-                    requests.push(
-                        fetch(
-                            "http://localhost:3000/api/teachers",
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`
-                                }
-                            }
-                        ).then(async (response) => ({
-                            type: "teachers",
-                            data: await response.json()
-                        }))
-                    );
-                }
-
-
-                // Courses
-                if (hasPermission("courses")) {
-                    requests.push(
-                        fetch(
-                            "http://localhost:3000/api/courses",
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`
-                                }
-                            }
-                        ).then(async (response) => ({
-                            type: "courses",
-                            data: await response.json()
-                        }))
-                    );
-                }
-
-
-                // Enrollments
-                if (hasPermission("enrollments")) {
-                    requests.push(
-                        fetch(
-                            "http://localhost:3000/api/enrollments",
-                            {
-                                headers: {
-                                    Authorization: `Bearer ${token}`
-                                }
-                            }
-                        ).then(async (response) => ({
-                            type: "enrollments",
-                            data: await response.json()
-                        }))
-                    );
-                }
-
-
-                const results = await Promise.all(
-                    requests
-                );
 
 
                 const newStats = {
@@ -181,235 +374,736 @@ function Dashboard() {
                 };
 
 
-                results.forEach((result) => {
-                    newStats[result.type] =
-                        getCount(
-                            result.data,
-                            result.type
-                        );
-                });
+                results.forEach(
+                    ({ key, data }) => {
+
+                        newStats[key] =
+                            getCount(
+                                data,
+                                key
+                            );
+                    }
+                );
 
 
                 setStats(newStats);
 
             } catch (error) {
+
                 console.error(
-                    "Failed to load dashboard data:",
+                    "ADMIN DASHBOARD ERROR:",
                     error
                 );
+
             } finally {
-                setLoading(false);
+
+                setAdminLoading(false);
             }
         };
 
 
-        fetchDashboardData();
+        loadAdminData();
 
-    }, []);
+    }, [isAdmin, isSuperAdmin, token]);
 
 
-    // ========================================
-    // LOAD TODAY'S TEACHING SCHEDULE
-    // ========================================
+    // =================================================
+    // ADMIN / SUPER ADMIN TODAY'S SCHEDULE
+    // =================================================
 
     useEffect(() => {
-        const fetchTodaySchedule = async () => {
 
-            if (!hasPermission("teachingSlots")) {
-                setScheduleLoading(false);
-                return;
-            }
+        if (!isAdmin && !isSuperAdmin) {
+            return;
+        }
 
+
+        if (!hasPermission("teachingSlots")) {
+            return;
+        }
+
+
+        const loadSchedule = async () => {
+
+            setScheduleLoading(true);
 
             try {
-                const response = await fetch(
-                    "http://localhost:3000/api/teaching-slots",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
-                );
 
-
-                if (!response.ok) {
-                    throw new Error(
-                        "Failed to fetch teaching schedule"
-                    );
-                }
-
-
-                const data = await response.json();
-
-
-                // Current day in Indian time
-                const today =
-                    new Date().toLocaleDateString(
-                        "en-IN",
-                        {
-                            weekday: "long",
-                            timeZone: "Asia/Kolkata"
-                        }
+                const data =
+                    await fetchData(
+                        "/teaching-slots",
+                        token
                     );
 
 
-                // Get today's active slots
-                const todaySlots =
+                const today = getToday();
+
+
+                const slots =
                     (data.teachingSlots || [])
                         .filter(
                             (slot) =>
-                                slot.dayOfWeek === today &&
-                                slot.status === "active"
+                                slot.dayOfWeek ===
+                                    today &&
+                                slot.status ===
+                                    "active"
                         )
-                        .sort((a, b) =>
-                            a.startTime.localeCompare(
-                                b.startTime
-                            )
+                        .sort(
+                            (a, b) =>
+                                a.startTime.localeCompare(
+                                    b.startTime
+                                )
                         );
 
 
-                setTodaySchedule(todaySlots);
+                setTodaySchedule(slots);
 
             } catch (error) {
+
                 console.error(
-                    "Failed to load today's schedule:",
+                    "ADMIN SCHEDULE ERROR:",
                     error
                 );
+
             } finally {
+
                 setScheduleLoading(false);
             }
         };
 
 
-        fetchTodaySchedule();
+        loadSchedule();
 
-    }, []);
-
-
-    // ========================================
-    // RENDER
-    // ========================================
-
-    return (
-        <div className="dashboard">
+    }, [isAdmin, isSuperAdmin, token]);
 
 
-            {/* ========================================
-                DASHBOARD HEADER
-            ======================================== */}
+    // =================================================
+    // TEACHER DATA
+    // =================================================
 
-            <div className="dashboard-header">
+    useEffect(() => {
 
-                <div>
+        if (!isTeacher) {
+            return;
+        }
+
+
+        const loadTeacherData = async () => {
+
+            setTeacherLoading(true);
+            setTeacherError("");
+
+
+            try {
+
+                const data =
+                    await fetchData(
+                        "/teaching-slots/me",
+                        token
+                    );
+
+
+                setTeacherSlots(
+                    data.teachingSlots || []
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "TEACHER DASHBOARD ERROR:",
+                    error
+                );
+
+                setTeacherError(
+                    error.message
+                );
+
+            } finally {
+
+                setTeacherLoading(false);
+            }
+        };
+
+
+        loadTeacherData();
+
+    }, [isTeacher, token]);
+
+
+    // =================================================
+    // TEACHER TODAY'S CLASSES
+    // =================================================
+
+    const teacherTodaySchedule =
+        useMemo(() => {
+
+            const today = getToday();
+
+            return teacherSlots
+                .filter(
+                    (slot) =>
+                        slot.dayOfWeek ===
+                            today &&
+                        slot.status ===
+                            "active"
+                )
+                .sort(
+                    (a, b) =>
+                        a.startTime.localeCompare(
+                            b.startTime
+                        )
+                );
+
+        }, [teacherSlots]);
+
+
+    // =================================================
+    // TEACHER TODAY COLUMNS
+    // =================================================
+
+    const teacherTodayColumns = {
+
+        grid:
+            "68px minmax(100px, 1fr) 60px 110px",
+
+        headers: [
+            "Time",
+            "Subject",
+            "Class",
+            "Students"
+        ],
+
+        render: (slot) => (
+
+            <>
+
+                <div className="schedule-time">
+                    <strong>
+                        {formatTime(
+                            slot.startTime
+                        )}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-subject">
+                    <strong>
+                        {slot.course?.name ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-class">
+                    <strong>
+                        {slot.className ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-capacity">
+                    <strong>
+                        {slot.enrolledStudents ??
+                            0}
+                        {" / "}
+                        {slot.maxStudents}
+                    </strong>
+                </div>
+
+            </>
+
+        )
+    };
+
+
+    // =================================================
+    // TEACHER WEEKLY COLUMNS
+    // =================================================
+
+    const teacherWeeklyColumns = {
+
+        grid:
+            "85px minmax(100px, 1fr) 60px 130px",
+
+        headers: [
+            "Day",
+            "Subject",
+            "Class",
+            "Time"
+        ],
+
+        render: (slot) => (
+
+            <>
+
+                <div className="schedule-time">
+                    <strong>
+                        {slot.dayOfWeek ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-subject">
+                    <strong>
+                        {slot.course?.name ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-class">
+                    <strong>
+                        {slot.className ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-capacity">
+                    <strong>
+                        {formatTime(
+                            slot.startTime
+                        )}
+                        {" - "}
+                        {formatTime(
+                            slot.endTime
+                        )}
+                    </strong>
+                </div>
+
+            </>
+
+        )
+    };
+
+
+    // =================================================
+    // ADMIN SCHEDULE COLUMNS
+    // =================================================
+
+    const adminColumns = {
+
+        grid:
+            "68px minmax(100px, 1fr) 45px 90px 55px",
+
+        headers: [
+            "Time",
+            "Subject",
+            "Class",
+            "Teacher",
+            "Students"
+        ],
+
+        render: (slot) => (
+
+            <>
+
+                <div className="schedule-time">
+                    <strong>
+                        {formatTime(
+                            slot.startTime
+                        )}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-subject">
+                    <strong>
+                        {slot.course?.name ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-class">
+                    <strong>
+                        {slot.className ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-teacher">
+                    <strong>
+                        {slot.teacher?.user?.name ||
+                            "N/A"}
+                    </strong>
+                </div>
+
+
+                <div className="schedule-capacity">
+                    <strong>
+                        {slot.enrolledStudents ??
+                            0}
+                        {" / "}
+                        {slot.maxStudents}
+                    </strong>
+                </div>
+
+            </>
+
+        )
+    };
+
+
+    // =================================================
+    // TEACHER DASHBOARD
+    // =================================================
+
+    if (isTeacher) {
+
+        return (
+
+            <div className="dashboard">
+
+                <div className="dashboard-header">
 
                     <h1>
-                        SCMS Dashboard
+                        Teacher Dashboard
                     </h1>
 
                     <p>
                         Welcome back,{" "}
                         <strong>
-                            {user?.name || "Admin"}
+                            {user?.name ||
+                                "Teacher"}
                         </strong>
                     </p>
 
                 </div>
 
+
+                {/* Statistics */}
+
+                <div className="dashboard-stats">
+
+                    <StatCard
+                        label="My Classes"
+                        value={
+                            teacherLoading
+                                ? "—"
+                                : teacherSlots.length
+                        }
+                    />
+
+                    <StatCard
+                        label="Today's Classes"
+                        value={
+                            teacherLoading
+                                ? "—"
+                                : teacherTodaySchedule.length
+                        }
+                    />
+
+                </div>
+
+
+                {/* Content */}
+
+                <div className="dashboard-grid">
+
+
+                    {/* Today's Classes */}
+
+                    <section className="dashboard-section">
+
+                        <div className="section-header">
+
+                            <h2>
+                                Today's Classes
+                            </h2>
+
+                            <span>
+                                {getToday()}
+                            </span>
+
+                        </div>
+
+
+                        {teacherLoading ? (
+
+                            <EmptyState
+                                message="Loading schedule..."
+                            />
+
+                        ) : teacherError ? (
+
+                            <EmptyState
+                                message={teacherError}
+                            />
+
+                        ) : (
+
+                            <ScheduleTable
+                                slots={
+                                    teacherTodaySchedule
+                                }
+                                columns={
+                                    teacherTodayColumns
+                                }
+                                emptyMessage={
+                                    "No classes scheduled for today."
+                                }
+                            />
+
+                        )}
+
+                    </section>
+
+
+                    {/* Weekly Schedule */}
+
+                    <section className="dashboard-section">
+
+                        <div className="section-header">
+
+                            <h2>
+                                My Teaching Schedule
+                            </h2>
+
+                            <span>
+                                {teacherSlots.length}{" "}
+                                {teacherSlots.length === 1
+                                    ? "class"
+                                    : "classes"}
+                            </span>
+
+                        </div>
+
+
+                        {teacherLoading ? (
+
+                            <EmptyState
+                                message="Loading schedule..."
+                            />
+
+                        ) : (
+
+                            <ScheduleTable
+                                slots={
+                                    teacherSlots
+                                }
+                                columns={
+                                    teacherWeeklyColumns
+                                }
+                                emptyMessage={
+                                    "No teaching slots assigned."
+                                }
+                            />
+
+                        )}
+
+                    </section>
+
+                </div>
+
+            </div>
+        );
+    }
+
+
+    // =================================================
+    // STUDENT DASHBOARD
+    // =================================================
+
+    if (isStudent) {
+
+        return (
+
+            <div className="dashboard">
+
+                <div className="dashboard-header">
+
+                    <h1>
+                        Student Dashboard
+                    </h1>
+
+                    <p>
+                        Welcome back,{" "}
+                        <strong>
+                            {user?.name ||
+                                "Student"}
+                        </strong>
+                    </p>
+
+                </div>
+
+
+                <div className="dashboard-stats">
+
+                    <StatCard
+                        label="My Classes"
+                        value="—"
+                    />
+
+                    <StatCard
+                        label="Today's Classes"
+                        value="—"
+                    />
+
+                    <StatCard
+                        label="Fee Status"
+                        value="—"
+                    />
+
+                </div>
+
+
+                <div className="dashboard-grid">
+
+
+                    <section className="dashboard-section">
+
+                        <div className="section-header">
+
+                            <h2>
+                                My Classes
+                            </h2>
+
+                        </div>
+
+                        <EmptyState
+                            message={
+                                "Your enrolled classes will appear here."
+                            }
+                        />
+
+                    </section>
+
+
+                    <section className="dashboard-section">
+
+                        <div className="section-header">
+
+                            <h2>
+                                Today's Classes
+                            </h2>
+
+                        </div>
+
+                        <EmptyState
+                            message={
+                                "Your class schedule will appear here."
+                            }
+                        />
+
+                    </section>
+
+                </div>
+
+            </div>
+        );
+    }
+
+
+    // =================================================
+    // ADMIN / SUPER ADMIN DASHBOARD
+    // =================================================
+
+    return (
+
+        <div className="dashboard">
+
+
+            {/* =================================================
+                HEADER
+            ================================================= */}
+
+            <div className="dashboard-header">
+
+                <h1>
+                    SCMS Dashboard
+                </h1>
+
+                <p>
+                    Welcome back,{" "}
+                    <strong>
+                        {user?.name || "Admin"}
+                    </strong>
+                </p>
+
             </div>
 
 
-            {/* ========================================
+            {/* =================================================
                 STATISTICS
-            ======================================== */}
+            ================================================= */}
 
             <div className="dashboard-stats">
 
 
                 {hasPermission("students") && (
-                    <div className="stat-card">
 
-                        <div className="stat-card-label">
-                            Students
-                        </div>
-
-                        <div className="stat-card-value">
-                            {loading
+                    <StatCard
+                        label="Students"
+                        value={
+                            adminLoading
                                 ? "—"
-                                : stats.students}
-                        </div>
+                                : stats.students
+                        }
+                    />
 
-                    </div>
                 )}
 
 
                 {hasPermission("teachers") && (
-                    <div className="stat-card">
 
-                        <div className="stat-card-label">
-                            Teachers
-                        </div>
-
-                        <div className="stat-card-value">
-                            {loading
+                    <StatCard
+                        label="Teachers"
+                        value={
+                            adminLoading
                                 ? "—"
-                                : stats.teachers}
-                        </div>
+                                : stats.teachers
+                        }
+                    />
 
-                    </div>
                 )}
 
 
                 {hasPermission("courses") && (
-                    <div className="stat-card">
 
-                        <div className="stat-card-label">
-                            Courses
-                        </div>
-
-                        <div className="stat-card-value">
-                            {loading
+                    <StatCard
+                        label="Courses"
+                        value={
+                            adminLoading
                                 ? "—"
-                                : stats.courses}
-                        </div>
+                                : stats.courses
+                        }
+                    />
 
-                    </div>
                 )}
 
 
                 {hasPermission("enrollments") && (
-                    <div className="stat-card">
 
-                        <div className="stat-card-label">
-                            Enrollments
-                        </div>
-
-                        <div className="stat-card-value">
-                            {loading
+                    <StatCard
+                        label="Enrollments"
+                        value={
+                            adminLoading
                                 ? "—"
-                                : stats.enrollments}
-                        </div>
+                                : stats.enrollments
+                        }
+                    />
 
-                    </div>
                 )}
 
             </div>
 
 
-            {/* ========================================
-                DASHBOARD SECTIONS
-            ======================================== */}
+            {/* =================================================
+                DASHBOARD CONTENT
+            ================================================= */}
 
             <div className="dashboard-grid">
 
 
-                {/* ========================================
-                    TODAY'S SCHEDULE
-                ======================================== */}
+                {/* Today's Schedule */}
 
                 {hasPermission("teachingSlots") && (
 
                     <section className="dashboard-section">
-
 
                         <div className="section-header">
 
@@ -418,13 +1112,7 @@ function Dashboard() {
                             </h2>
 
                             <span>
-                                {new Date().toLocaleDateString(
-                                    "en-IN",
-                                    {
-                                        weekday: "long",
-                                        timeZone: "Asia/Kolkata"
-                                    }
-                                )}
+                                {getToday()}
                             </span>
 
                         </div>
@@ -432,141 +1120,23 @@ function Dashboard() {
 
                         {scheduleLoading ? (
 
-                            <div className="empty-state">
-
-                                <p>
-                                    Loading schedule...
-                                </p>
-
-                            </div>
-
-                        ) : todaySchedule.length === 0 ? (
-
-                            <div className="empty-state">
-
-                                <p>
-                                    No classes scheduled
-                                    for today.
-                                </p>
-
-                            </div>
+                            <EmptyState
+                                message="Loading schedule..."
+                            />
 
                         ) : (
 
-                          <div className="schedule-list">
-
-    {/* ========================================
-        SCHEDULE COLUMN HEADERS
-    ======================================== */}
-
-    <div className="schedule-header">
-
-        <span>Time</span>
-
-        <span>Subject</span>
-
-        <span>Class</span>
-
-        <span>Teacher</span>
-
-        <span>Students</span>
-
-    </div>
-
-
-    {/* ========================================
-        SCHEDULE ROWS
-    ======================================== */}
-
-    {todaySchedule.map(
-        (slot) => (
-
-            <div
-                className="schedule-item"
-                key={slot._id}
-            >
-
-                {/* TIME */}
-
-                <div className="schedule-time">
-
-                    <strong>
-                        {formatTime(
-                            slot.startTime
-                        )}
-                    </strong>
-
-                </div>
-
-
-                {/* SUBJECT */}
-
-                <div className="schedule-subject">
-
-                    <strong>
-                        {
-                            slot.course
-                                ?.name ||
-                            "N/A"
-                        }
-                    </strong>
-
-                </div>
-
-
-                {/* CLASS */}
-
-                <div className="schedule-class">
-
-                    <strong>
-                        {
-                            slot.className ||
-                            "N/A"
-                        }
-                    </strong>
-
-                </div>
-
-
-                {/* TEACHER */}
-
-                <div className="schedule-teacher">
-
-                    <strong>
-                        {
-                            slot.teacher
-                                ?.user
-                                ?.name ||
-                            "N/A"
-                        }
-                    </strong>
-
-                </div>
-
-
-                {/* STUDENTS */}
-
-                <div className="schedule-capacity">
-
-                    <strong>
-                        {
-                            slot.enrolledStudents ??
-                            0
-                        }
-                        {" / "}
-                        {
-                            slot.maxStudents
-                        }
-                    </strong>
-
-                </div>
-
-            </div>
-
-        )
-    )}
-
-</div>
+                            <ScheduleTable
+                                slots={
+                                    todaySchedule
+                                }
+                                columns={
+                                    adminColumns
+                                }
+                                emptyMessage={
+                                    "No classes scheduled for today."
+                                }
+                            />
 
                         )}
 
@@ -575,9 +1145,7 @@ function Dashboard() {
                 )}
 
 
-                {/* ========================================
-                    RECENT ACTIVITY
-                ======================================== */}
+                {/* Recent Activity */}
 
                 <section className="dashboard-section">
 
@@ -593,14 +1161,12 @@ function Dashboard() {
 
                     </div>
 
-                    <div className="empty-state">
 
-                        <p>
-                            Recent SCMS activity
-                            will appear here.
-                        </p>
-
-                    </div>
+                    <EmptyState
+                        message={
+                            "Recent SCMS activity will appear here."
+                        }
+                    />
 
                 </section>
 
@@ -609,5 +1175,6 @@ function Dashboard() {
         </div>
     );
 }
+
 
 export default Dashboard;
