@@ -3,112 +3,301 @@ import "./studentFeeManagement.css";
 
 const API = "http://localhost:3000/api";
 
+const ACADEMIC_MONTHS = [
+    { value: 4, name: "April" },
+    { value: 5, name: "May" },
+    { value: 6, name: "June" },
+    { value: 7, name: "July" },
+    { value: 8, name: "August" },
+    { value: 9, name: "September" },
+    { value: 10, name: "October" },
+    { value: 11, name: "November" },
+    { value: 12, name: "December" },
+    { value: 1, name: "January" },
+    { value: 2, name: "February" },
+    { value: 3, name: "March" }
+];
+
+
+// =====================================================
+// HELPERS
+// =====================================================
+
+const getAcademicYear = () => {
+    const month = new Date().getMonth() + 1;
+    const year = new Date().getFullYear();
+
+    return month >= 4 ? year : year - 1;
+};
+
+
+const getCurrentAcademicMonths = () => {
+    const currentMonth =
+        new Date().getMonth() + 1;
+
+    return ACADEMIC_MONTHS.filter((month) => {
+
+        if (currentMonth >= 4) {
+            return (
+                month.value >= 4 &&
+                month.value <= currentMonth
+            );
+        }
+
+        return (
+            month.value >= 4 ||
+            month.value <= currentMonth
+        );
+
+    });
+};
+
+
+const getMonthName = (month) =>
+    ACADEMIC_MONTHS.find(
+        (item) => item.value === Number(month)
+    )?.name || "";
+
+
+const formatCurrency = (amount) =>
+    `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+
+
+const getStudentName = (student) =>
+    student?.user?.name || "Unknown Student";
+
+
+const getCourseName = (enrollment) =>
+    enrollment?.course?.name || "Unknown Course";
+
+
+const getTeacherName = (enrollment) =>
+    enrollment?.teacher?.user?.name || "—";
+
+
+const emptySummary = {
+    totalFee: 0,
+    collected: 0,
+    due: 0,
+    paidStudents: 0,
+    unpaidStudents: 0
+};
+
+
+// =====================================================
+// COMPONENT
+// =====================================================
+
 function StudentFeeManagement() {
 
-    const token = localStorage.getItem("token");
-
-    const [fees, setFees] = useState([]);
-
-    const [summary, setSummary] = useState({
-        totalFees: 0,
-        totalCollected: 0,
-        totalDue: 0,
-        paidCount: 0,
-        dueCount: 0
-    });
-
-    const [loading, setLoading] = useState(true);
-
-    const [error, setError] = useState("");
-
-    const [search, setSearch] = useState("");
-
-    const [month, setMonth] = useState("");
-
-    const [year, setYear] = useState("");
-
-    const [status, setStatus] = useState("");
-
-    const [course, setCourse] = useState("");
-
-    const [teacher, setTeacher] = useState("");
-
-    const [selectedStudent, setSelectedStudent] = useState(null);
-
-    const [selectedFee, setSelectedFee] = useState(null);
-
-    const [paymentForm, setPaymentForm] = useState({
-        paidAt: new Date().toISOString().split("T")[0],
-        paymentMethod: "cash",
-        transactionId: "",
-        notes: ""
-    });
-
-    const [updatingId, setUpdatingId] = useState(null);
+    const token =
+        localStorage.getItem("token");
 
 
-    // =====================================================
-    // LOAD FEES
-    // =====================================================
+    // =================================================
+    // STATE
+    // =================================================
 
-    const loadFees = async () => {
+    const [enrollments, setEnrollments] =
+        useState([]);
+
+    const [fees, setFees] =
+        useState([]);
+
+    const [students, setStudents] =
+        useState([]);
+
+    const [selectedStudent, setSelectedStudent] =
+        useState(null);
+
+    const [selectedEnrollment, setSelectedEnrollment] =
+        useState(null);
+
+    const [search, setSearch] =
+        useState("");
+
+    const [selectedMonth, setSelectedMonth] =
+        useState(new Date().getMonth() + 1);
+
+    const [selectedYear, setSelectedYear] =
+        useState(getAcademicYear());
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [loadingStudent, setLoadingStudent] =
+        useState(false);
+
+    const [saving, setSaving] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+
+    // =================================================
+    // CLOSE MODAL
+    // =================================================
+
+    const closeModal = () => {
+        setSelectedEnrollment(null);
+    };
+
+
+    // =================================================
+    // API HELPER
+    // =================================================
+
+    const apiRequest = async (
+        url,
+        options = {}
+    ) => {
+
+        const response = await fetch(
+            url,
+            {
+                ...options,
+                headers: {
+                    ...(options.headers || {}),
+                    Authorization:
+                        `Bearer ${token}`
+                }
+            }
+        );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message ||
+                "Something went wrong"
+            );
+        }
+
+        return data;
+    };
+
+
+    // =================================================
+    // FIND FEE
+    // =================================================
+
+    const findFee = (
+        enrollmentId,
+        month = selectedMonth,
+        year = selectedYear
+    ) => {
+
+        return fees.find(
+            (fee) =>
+                fee.enrollment?._id?.toString() ===
+                    enrollmentId?.toString() &&
+                Number(fee.month) === Number(month) &&
+                Number(fee.year) === Number(year)
+        );
+
+    };
+
+
+    // =================================================
+    // FEE STATUS
+    // =================================================
+
+    const getFeeStatus = (enrollmentId) => {
+
+        const fee =
+            findFee(enrollmentId);
+
+        return fee?.status === "paid"
+            ? "paid"
+            : "due";
+    };
+
+
+    // =================================================
+    // LOAD MAIN DATA
+    // =================================================
+
+    const loadData = async () => {
 
         try {
 
             setLoading(true);
             setError("");
 
-            const params = new URLSearchParams();
+            const [
+                enrollmentData,
+                feeData
+            ] = await Promise.all([
 
-            if (month)
-                params.append("month", month);
+                apiRequest(
+                    `${API}/enrollments`
+                ),
 
-            if (year)
-                params.append("year", year);
+                apiRequest(
+                    `${API}/student-fees?month=${selectedMonth}&year=${selectedYear}`
+                )
 
-            if (status)
-                params.append("status", status);
+            ]);
 
-            const query = params.toString();
 
-            const response = await fetch(
-                `${API}/student-fees${query ? `?${query}` : ""}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+            const activeEnrollments =
+                (
+                    enrollmentData.enrollments ||
+                    []
+                ).filter(
+                    (enrollment) =>
+                        enrollment.status ===
+                        "active"
+                );
+
+
+            setEnrollments(
+                activeEnrollments
+            );
+
+            setFees(
+                feeData.fees || []
+            );
+
+
+            const studentMap =
+                new Map();
+
+
+            activeEnrollments.forEach(
+                (enrollment) => {
+
+                    const student =
+                        enrollment.student;
+
+                    if (!student?._id)
+                        return;
+
+                    studentMap.set(
+                        student._id.toString(),
+                        student
+                    );
+
                 }
             );
 
-            const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(
-                    data.message ||
-                    "Failed to fetch student fees"
-                );
-            }
-
-            setFees(data.fees || []);
-
-            setSummary(
-                data.summary || {
-                    totalFees: 0,
-                    totalCollected: 0,
-                    totalDue: 0,
-                    paidCount: 0,
-                    dueCount: 0
-                }
+            setStudents(
+                [...studentMap.values()]
             );
 
         } catch (error) {
 
             console.error(
-                "STUDENT FEES ERROR:",
+                "STUDENT FEE LOAD ERROR:",
                 error
             );
 
-            setError(error.message);
+            setError(
+                error.message
+            );
 
         } finally {
 
@@ -120,371 +309,209 @@ function StudentFeeManagement() {
 
 
     useEffect(() => {
-        loadFees();
-    }, [month, year, status]);
 
-
-    // =====================================================
-    // FORMATTERS
-    // =====================================================
-
-    const formatCurrency = (amount) => {
-
-        return `₹${Number(
-            amount || 0
-        ).toLocaleString("en-IN")}`;
-
-    };
-
-
-    const formatDate = (date) => {
-
-        if (!date)
-            return "—";
-
-        return new Date(date).toLocaleDateString(
-            "en-IN",
-            {
-                day: "2-digit",
-                month: "short",
-                year: "numeric"
-            }
-        );
-
-    };
-
-
-    const formatMonth = (feeMonth, feeYear) => {
-
-        if (!feeMonth || !feeYear)
-            return "—";
-
-        const date = new Date(
-            Number(feeYear),
-            Number(feeMonth) - 1,
-            1
-        );
-
-        return date.toLocaleDateString(
-            "en-IN",
-            {
-                month: "long",
-                year: "numeric"
-            }
-        );
-
-    };
-
-
-    // =====================================================
-    // GET DETAILS
-    // =====================================================
-
-    const getStudentName = (fee) =>
-        fee.student?.user?.name || "—";
-
-
-    const getStudentId = (fee) =>
-        fee.student?.studentId || "—";
-
-
-    const getCourseName = (fee) =>
-        fee.enrollment?.course?.name || "—";
-
-
-    const getTeacherName = (fee) =>
-        fee.enrollment?.teacher?.user?.name || "—";
-
-
-    // =====================================================
-    // COURSE / TEACHER OPTIONS
-    // =====================================================
-
-    const courseOptions = useMemo(() => {
-
-        const courses = new Set();
-
-        fees.forEach((fee) => {
-
-            const name =
-                fee.enrollment?.course?.name;
-
-            if (name)
-                courses.add(name);
-
-        });
-
-        return [...courses].sort();
-
-    }, [fees]);
-
-
-    const teacherOptions = useMemo(() => {
-
-        const teachers = new Set();
-
-        fees.forEach((fee) => {
-
-            const name =
-                fee.enrollment
-                    ?.teacher
-                    ?.user
-                    ?.name;
-
-            if (name)
-                teachers.add(name);
-
-        });
-
-        return [...teachers].sort();
-
-    }, [fees]);
-
-
-    // =====================================================
-    // STUDENT GROUPING
-    // =====================================================
-
-    const students = useMemo(() => {
-
-        const map = new Map();
-
-        fees.forEach((fee) => {
-
-            const studentId =
-                fee.student?._id;
-
-            if (!studentId)
-                return;
-
-            if (!map.has(studentId)) {
-
-                map.set(studentId, {
-                    id: studentId,
-                    name: getStudentName(fee),
-                    studentId: getStudentId(fee),
-                    course: getCourseName(fee),
-                    teacher: getTeacherName(fee),
-                    fees: []
-                });
-
-            }
-
-            map.get(studentId).fees.push(fee);
-
-        });
-
-
-        return [...map.values()];
-
-    }, [fees]);
-
-
-    // =====================================================
-    // FILTER STUDENTS
-    // =====================================================
-
-    const filteredStudents = useMemo(() => {
-
-        const value =
-            search.trim().toLowerCase();
-
-        return students.filter((student) => {
-
-            const matchesSearch =
-                !value ||
-                student.name
-                    .toLowerCase()
-                    .includes(value) ||
-                student.studentId
-                    .toLowerCase()
-                    .includes(value);
-
-            const matchesCourse =
-                !course ||
-                student.fees.some(
-                    fee =>
-                        getCourseName(fee) === course
-                );
-
-            const matchesTeacher =
-                !teacher ||
-                student.fees.some(
-                    fee =>
-                        getTeacherName(fee) === teacher
-                );
-
-            return (
-                matchesSearch &&
-                matchesCourse &&
-                matchesTeacher
-            );
-
-        });
+        loadData();
 
     }, [
-        students,
-        search,
-        course,
-        teacher
+        selectedMonth,
+        selectedYear
     ]);
 
 
-    // =====================================================
-    // STUDENT SUMMARY
-    // =====================================================
+    // =================================================
+    // SEARCH RESULTS
+    // =================================================
 
-    const getStudentSummary = (student) => {
+    const searchResults =
+        useMemo(() => {
 
-        const total =
-            student.fees.reduce(
-                (sum, fee) =>
-                    sum + Number(fee.amount || 0),
-                0
-            );
+            const value =
+                search.trim().toLowerCase();
 
-        const due =
-            student.fees
-                .filter(
-                    fee => fee.status === "due"
-                )
-                .reduce(
-                    (sum, fee) =>
-                        sum + Number(fee.amount || 0),
-                    0
-                );
-
-        const paid =
-            student.fees
-                .filter(
-                    fee => fee.status === "paid"
-                )
-                .reduce(
-                    (sum, fee) =>
-                        sum + Number(fee.amount || 0),
-                    0
-                );
-
-        return {
-            total,
-            paid,
-            due
-        };
-
-    };
-
-
-    // =====================================================
-    // OPEN STUDENT
-    // =====================================================
-
-    const openStudent = (student) => {
-
-        setSelectedStudent(student);
-
-    };
-
-
-    // =====================================================
-    // OPEN PAYMENT FORM
-    // =====================================================
-
-    const openPayment = (fee) => {
-
-        setSelectedFee(fee);
-
-        setPaymentForm({
-            paidAt:
-                new Date()
-                    .toISOString()
-                    .split("T")[0],
-
-            paymentMethod:
-                "cash",
-
-            transactionId:
-                "",
-
-            notes:
-                ""
-        });
-
-    };
-
-
-    // =====================================================
-    // RECORD PAYMENT
-    // =====================================================
-
-    const recordPayment = async () => {
-
-        if (!selectedFee)
-            return;
-
-        try {
-
-            setUpdatingId(
-                selectedFee._id
-            );
-
-            setError("");
-
-            const response =
-                await fetch(
-                    `${API}/student-fees/${selectedFee._id}`,
-                    {
-                        method: "PUT",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-
-                            Authorization:
-                                `Bearer ${token}`
-                        },
-
-                        body: JSON.stringify({
-                            status: "paid",
-
-                            paidAt:
-                                paymentForm.paidAt,
-
-                            paymentMethod:
-                                paymentForm.paymentMethod,
-
-                            transactionId:
-                                paymentForm.transactionId,
-
-                            notes:
-                                paymentForm.notes
-                        })
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.message ||
-                    "Failed to record payment"
-                );
-
+            if (
+                !value ||
+                selectedStudent
+            ) {
+                return [];
             }
 
 
-            setSelectedFee(null);
+            return students
+                .filter((student) => {
 
-            await loadFees();
+                    const name =
+                        getStudentName(
+                            student
+                        ).toLowerCase();
 
+                    const studentId =
+                        String(
+                            student.studentId || ""
+                        ).toLowerCase();
+
+                    return (
+                        name.includes(value) ||
+                        studentId.includes(value)
+                    );
+
+                })
+                .slice(0, 10);
+
+        }, [
+            search,
+            students,
+            selectedStudent
+        ]);
+
+
+    // =================================================
+    // MONTHLY SUMMARY
+    // =================================================
+
+    const summary =
+        useMemo(() => {
+
+            const studentStatus =
+                new Map();
+
+            let totalFee = 0;
+            let collected = 0;
+            let due = 0;
+
+
+            enrollments.forEach(
+                (enrollment) => {
+
+                    const student =
+                        enrollment.student;
+
+                    if (!student?._id)
+                        return;
+
+
+                    const studentId =
+                        student._id.toString();
+
+
+                    const amount =
+                        Number(
+                            enrollment.monthlyFee ||
+                            enrollment.course?.monthlyFee ||
+                            0
+                        );
+
+
+                    totalFee += amount;
+
+
+                    const fee =
+                        findFee(
+                            enrollment._id
+                        );
+
+
+                    const paid =
+                        fee?.status === "paid";
+
+
+                    if (paid) {
+                        collected += amount;
+                    } else {
+                        due += amount;
+                    }
+
+
+                    if (
+                        !studentStatus.has(
+                            studentId
+                        )
+                    ) {
+                        studentStatus.set(
+                            studentId,
+                            true
+                        );
+                    }
+
+
+                    if (!paid) {
+                        studentStatus.set(
+                            studentId,
+                            false
+                        );
+                    }
+
+                }
+            );
+
+
+            let paidStudents = 0;
+            let unpaidStudents = 0;
+
+
+            studentStatus.forEach(
+                (paid) => {
+
+                    if (paid) {
+                        paidStudents++;
+                    } else {
+                        unpaidStudents++;
+                    }
+
+                }
+            );
+
+
+            return {
+                totalFee,
+                collected,
+                due,
+                paidStudents,
+                unpaidStudents
+            };
+
+        }, [
+            enrollments,
+            fees,
+            selectedMonth,
+            selectedYear
+        ]);
+
+
+    // =================================================
+    // SELECT STUDENT
+    // =================================================
+
+    const selectStudent = async (student) => {
+
+        try {
+
+            setSelectedStudent(
+                student
+            );
+
+            setSearch(
+                student.studentId ||
+                getStudentName(student)
+            );
+
+            setLoadingStudent(true);
+            setError("");
+
+
+            const data =
+                await apiRequest(
+                    `${API}/student-fees/student/${student._id}`
+                );
+
+
+            setFees(
+                data.fees || []
+            );
 
         } catch (error) {
 
             console.error(
-                "RECORD PAYMENT ERROR:",
+                "LOAD STUDENT FEES ERROR:",
                 error
             );
 
@@ -494,40 +521,224 @@ function StudentFeeManagement() {
 
         } finally {
 
-            setUpdatingId(null);
+            setLoadingStudent(false);
 
         }
-
     };
 
 
-    // =====================================================
-    // RESET FILTERS
-    // =====================================================
+    // =================================================
+    // STUDENT ENROLLMENTS
+    // =================================================
 
-    const resetFilters = () => {
+    const studentEnrollments =
+        useMemo(() => {
 
+            if (!selectedStudent)
+                return [];
+
+            return enrollments.filter(
+                (enrollment) =>
+                    enrollment.student?._id?.toString() ===
+                    selectedStudent._id?.toString()
+            );
+
+        }, [
+            enrollments,
+            selectedStudent
+        ]);
+
+
+    // =================================================
+    // RECORD FEE
+    // =================================================
+
+    const recordFee = async () => {
+
+        if (!selectedEnrollment)
+            return;
+
+
+        try {
+
+            setSaving(true);
+            setError("");
+
+
+            const existingFee =
+                findFee(
+                    selectedEnrollment._id
+                );
+
+
+            // Extra protection against
+            // duplicate payment.
+
+            if (
+                existingFee?.status ===
+                "paid"
+            ) {
+                closeModal();
+                return;
+            }
+
+
+            const amount =
+                Number(
+                    selectedEnrollment.monthlyFee ||
+                    selectedEnrollment.course?.monthlyFee ||
+                    0
+                );
+
+
+            await apiRequest(
+                `${API}/student-fees`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            enrollmentId:
+                                selectedEnrollment._id,
+
+                            month:
+                                selectedMonth,
+
+                            year:
+                                selectedYear,
+
+                            amount,
+
+                            status:
+                                "paid",
+
+                            paidAt:
+                                new Date().toISOString()
+
+                        })
+                }
+            );
+
+
+            closeModal();
+
+            await loadData();
+
+
+            if (selectedStudent) {
+
+                const data =
+                    await apiRequest(
+                        `${API}/student-fees/student/${selectedStudent._id}`
+                    );
+
+                setFees(
+                    data.fees || []
+                );
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "RECORD FEE ERROR:",
+                error
+            );
+
+            setError(
+                error.message
+            );
+
+        } finally {
+
+            setSaving(false);
+
+        }
+    };
+
+
+    // =================================================
+    // OPEN RECORD MODAL
+    // =================================================
+
+    const openRecordFee =
+        (enrollment) => {
+
+            setSelectedEnrollment(
+                enrollment
+            );
+
+        };
+
+
+    // =================================================
+    // CLEAR STUDENT
+    // =================================================
+
+    const clearStudent = () => {
+
+        setSelectedStudent(null);
         setSearch("");
-        setMonth("");
-        setYear("");
-        setStatus("");
-        setCourse("");
-        setTeacher("");
+        setFees([]);
+        closeModal();
+
+        loadData();
 
     };
 
 
-    // =====================================================
+    // =================================================
+    // MONTH DATA
+    // =================================================
+
+    const availableMonths =
+        getCurrentAcademicMonths();
+
+
+    const currentMonthName =
+        getMonthName(
+            selectedMonth
+        );
+
+
+    const years = [
+        selectedYear - 1,
+        selectedYear,
+        selectedYear + 1
+    ];
+
+
+    // =================================================
+    // RECENT PAID FEES
+    // =================================================
+
+    const recentPaidFees =
+        fees
+            .filter(
+                (fee) =>
+                    fee.status === "paid"
+            )
+            .slice(0, 10);
+
+
+    // =================================================
     // RENDER
-    // =====================================================
+    // =================================================
 
     return (
 
         <div className="student-fee-management-page">
 
-            {/* =================================================
+
+            {/* =============================================
                 HEADER
-            ================================================= */}
+            ============================================= */}
 
             <div className="student-fee-management-header">
 
@@ -538,7 +749,8 @@ function StudentFeeManagement() {
                     </h1>
 
                     <p>
-                        Manage student fees and record payments.
+                        Manage course-wise
+                        student fee collection.
                     </p>
 
                 </div>
@@ -546,20 +758,109 @@ function StudentFeeManagement() {
             </div>
 
 
-            {/* =================================================
+            {/* =============================================
+                MONTH SELECTOR
+            ============================================= */}
+
+            <div className="student-fee-month-bar">
+
+                <div>
+
+                    <label>
+                        Fee Month
+                    </label>
+
+                    <select
+                        value={selectedMonth}
+                        onChange={(event) =>
+                            setSelectedMonth(
+                                Number(
+                                    event.target.value
+                                )
+                            )
+                        }
+                    >
+
+                        {availableMonths.map(
+                            (month) => (
+
+                                <option
+                                    key={month.value}
+                                    value={month.value}
+                                >
+                                    {month.name}
+                                </option>
+
+                            )
+                        )}
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Academic Year
+                    </label>
+
+                    <select
+                        value={selectedYear}
+                        onChange={(event) =>
+                            setSelectedYear(
+                                Number(
+                                    event.target.value
+                                )
+                            )
+                        }
+                    >
+
+                        {years.map(
+                            (year) => (
+
+                                <option
+                                    key={year}
+                                    value={year}
+                                >
+                                    {year}-
+                                    {String(
+                                        year + 1
+                                    ).slice(-2)}
+                                </option>
+
+                            )
+                        )}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            {/* =============================================
                 SUMMARY
-            ================================================= */}
+            ============================================= */}
 
             <div className="student-fee-summary">
 
                 <div className="student-fee-summary-card">
 
-                    <span>Total Fees</span>
+                    <span>
+                        Total Fee
+                    </span>
+
+                    <small>
+                        {currentMonthName}
+                    </small>
 
                     <strong>
-                        {formatCurrency(
-                            summary.totalFees
-                        )}
+                        {
+                            formatCurrency(
+                                summary.totalFee
+                            )
+                        }
                     </strong>
 
                 </div>
@@ -567,12 +868,16 @@ function StudentFeeManagement() {
 
                 <div className="student-fee-summary-card">
 
-                    <span>Collected</span>
+                    <span>
+                        Collected Fee
+                    </span>
 
                     <strong>
-                        {formatCurrency(
-                            summary.totalCollected
-                        )}
+                        {
+                            formatCurrency(
+                                summary.collected
+                            )
+                        }
                     </strong>
 
                 </div>
@@ -580,12 +885,16 @@ function StudentFeeManagement() {
 
                 <div className="student-fee-summary-card">
 
-                    <span>Due</span>
+                    <span>
+                        Due Fee
+                    </span>
 
                     <strong>
-                        {formatCurrency(
-                            summary.totalDue
-                        )}
+                        {
+                            formatCurrency(
+                                summary.due
+                            )
+                        }
                     </strong>
 
                 </div>
@@ -593,10 +902,14 @@ function StudentFeeManagement() {
 
                 <div className="student-fee-summary-card">
 
-                    <span>Paid Records</span>
+                    <span>
+                        Student Paid
+                    </span>
 
                     <strong>
-                        {summary.paidCount}
+                        {
+                            summary.paidStudents
+                        }
                     </strong>
 
                 </div>
@@ -604,10 +917,14 @@ function StudentFeeManagement() {
 
                 <div className="student-fee-summary-card">
 
-                    <span>Due Records</span>
+                    <span>
+                        Student Unpaid
+                    </span>
 
                     <strong>
-                        {summary.dueCount}
+                        {
+                            summary.unpaidStudents
+                        }
                     </strong>
 
                 </div>
@@ -615,599 +932,496 @@ function StudentFeeManagement() {
             </div>
 
 
-            {/* =================================================
-                FILTERS
-            ================================================= */}
+            {/* =============================================
+                MAIN
+            ============================================= */}
 
-            <div className="student-fee-filters">
+            <div className="student-fee-content">
 
-                <div className="student-fee-filter-group search-group">
 
-                    <label>
-                        Search Student
-                    </label>
+                {/* =========================================
+                    RECORD A FEE
+                ========================================= */}
 
-                    <input
-                        type="text"
-                        placeholder="Name or Student ID"
-                        value={search}
-                        onChange={(event) =>
-                            setSearch(
-                                event.target.value
-                            )
-                        }
-                    />
+                <div className="student-fee-card">
 
-                </div>
+                    <div className="student-fee-section-header">
 
+                        <div>
 
-                <div className="student-fee-filter-group">
+                            <h2>
+                                Record a Fee
+                            </h2>
 
-                    <label>
-                        Month
-                    </label>
+                            <span>
+                                {currentMonthName}{" "}
+                                {selectedYear}
+                            </span>
 
-                    <select
-                        value={month}
-                        onChange={(event) =>
-                            setMonth(
-                                event.target.value
-                            )
-                        }
-                    >
-
-                        <option value="">
-                            All Months
-                        </option>
-
-                        {[
-                            "January",
-                            "February",
-                            "March",
-                            "April",
-                            "May",
-                            "June",
-                            "July",
-                            "August",
-                            "September",
-                            "October",
-                            "November",
-                            "December"
-                        ].map(
-                            (name, index) => (
-
-                                <option
-                                    key={index + 1}
-                                    value={index + 1}
-                                >
-                                    {name}
-                                </option>
-
-                            )
-                        )}
-
-                    </select>
-
-                </div>
-
-
-                <div className="student-fee-filter-group">
-
-                    <label>
-                        Year
-                    </label>
-
-                    <input
-                        type="number"
-                        placeholder="Year"
-                        value={year}
-                        onChange={(event) =>
-                            setYear(
-                                event.target.value
-                            )
-                        }
-                    />
-
-                </div>
-
-
-                <div className="student-fee-filter-group">
-
-                    <label>
-                        Status
-                    </label>
-
-                    <select
-                        value={status}
-                        onChange={(event) =>
-                            setStatus(
-                                event.target.value
-                            )
-                        }
-                    >
-
-                        <option value="">
-                            All Status
-                        </option>
-
-                        <option value="paid">
-                            Paid
-                        </option>
-
-                        <option value="due">
-                            Due
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div className="student-fee-filter-group">
-
-                    <label>
-                        Course
-                    </label>
-
-                    <select
-                        value={course}
-                        onChange={(event) =>
-                            setCourse(
-                                event.target.value
-                            )
-                        }
-                    >
-
-                        <option value="">
-                            All Courses
-                        </option>
-
-                        {courseOptions.map(
-                            (item) => (
-
-                                <option
-                                    key={item}
-                                    value={item}
-                                >
-                                    {item}
-                                </option>
-
-                            )
-                        )}
-
-                    </select>
-
-                </div>
-
-
-                <div className="student-fee-filter-group">
-
-                    <label>
-                        Teacher
-                    </label>
-
-                    <select
-                        value={teacher}
-                        onChange={(event) =>
-                            setTeacher(
-                                event.target.value
-                            )
-                        }
-                    >
-
-                        <option value="">
-                            All Teachers
-                        </option>
-
-                        {teacherOptions.map(
-                            (item) => (
-
-                                <option
-                                    key={item}
-                                    value={item}
-                                >
-                                    {item}
-                                </option>
-
-                            )
-                        )}
-
-                    </select>
-
-                </div>
-
-
-                <button
-                    type="button"
-                    className="student-fee-reset-button"
-                    onClick={resetFilters}
-                >
-                    Reset
-                </button>
-
-            </div>
-
-
-            {/* =================================================
-                ERROR
-            ================================================= */}
-
-            {error && (
-
-                <div className="student-fee-error">
-
-                    {error}
-
-                </div>
-
-            )}
-
-
-            {/* =================================================
-                STUDENT LIST
-            ================================================= */}
-
-            <div className="student-fee-card">
-
-                <div className="student-fee-section-header">
-
-                    <div>
-
-                        <h2>
-                            Students
-                        </h2>
-
-                        <span>
-                            {filteredStudents.length} students
-                        </span>
+                        </div>
 
                     </div>
 
-                </div>
+
+                    <div className="student-fee-search-box">
+
+                        <label>
+                            Search Student
+                        </label>
+
+                        <input
+                            type="text"
+                            value={search}
+                            placeholder="Search by Student ID or Name"
+                            onChange={(event) => {
+
+                                setSearch(
+                                    event.target.value
+                                );
+
+                                if (
+                                    selectedStudent
+                                ) {
+
+                                    setSelectedStudent(
+                                        null
+                                    );
+
+                                    setFees([]);
+
+                                }
+
+                            }}
+                        />
 
 
-                {loading ? (
+                        {!selectedStudent &&
+                            search.trim() && (
 
-                    <div className="student-fee-empty">
-                        Loading student fees...
-                    </div>
+                            <div className="student-fee-search-results">
 
-                ) : filteredStudents.length === 0 ? (
+                                {loading ? (
 
-                    <div className="student-fee-empty">
-                        No students found.
-                    </div>
+                                    <div>
+                                        Searching...
+                                    </div>
 
-                ) : (
+                                ) : searchResults.length === 0 ? (
 
-                    <div className="student-fee-table-wrapper">
+                                    <div>
+                                        No student found.
+                                    </div>
 
-                        <table className="student-fee-table">
+                                ) : (
 
-                            <thead>
+                                    searchResults.map(
+                                        (student) => (
 
-                                <tr>
-
-                                    <th>
-                                        Student
-                                    </th>
-
-                                    <th>
-                                        Student ID
-                                    </th>
-
-                                    <th>
-                                        Course
-                                    </th>
-
-                                    <th>
-                                        Teacher
-                                    </th>
-
-                                    <th>
-                                        Total Fees
-                                    </th>
-
-                                    <th>
-                                        Collected
-                                    </th>
-
-                                    <th>
-                                        Due
-                                    </th>
-
-                                    <th>
-                                        Action
-                                    </th>
-
-                                </tr>
-
-                            </thead>
-
-
-                            <tbody>
-
-                                {filteredStudents.map(
-                                    (student) => {
-
-                                        const studentSummary =
-                                            getStudentSummary(
-                                                student
-                                            );
-
-                                        return (
-
-                                            <tr
+                                            <button
+                                                type="button"
                                                 key={
-                                                    student.id
+                                                    student._id
+                                                }
+                                                className="student-fee-student-result"
+                                                onClick={() =>
+                                                    selectStudent(
+                                                        student
+                                                    )
                                                 }
                                             >
 
-                                                <td>
+                                                <strong>
+                                                    {
+                                                        getStudentName(
+                                                            student
+                                                        )
+                                                    }
+                                                </strong>
 
-                                                    <strong>
-                                                        {student.name}
-                                                    </strong>
+                                                <span>
+                                                    {
+                                                        student.studentId
+                                                    }
+                                                </span>
 
-                                                </td>
+                                            </button>
 
+                                        )
+                                    )
 
-                                                <td>
-                                                    {student.studentId}
-                                                </td>
-
-
-                                                <td>
-                                                    {student.course}
-                                                </td>
-
-
-                                                <td>
-                                                    {student.teacher}
-                                                </td>
-
-
-                                                <td>
-                                                    {formatCurrency(
-                                                        studentSummary.total
-                                                    )}
-                                                </td>
-
-
-                                                <td className="student-fee-collected">
-
-                                                    {formatCurrency(
-                                                        studentSummary.paid
-                                                    )}
-
-                                                </td>
-
-
-                                                <td className="student-fee-due">
-
-                                                    {formatCurrency(
-                                                        studentSummary.due
-                                                    )}
-
-                                                </td>
-
-
-                                                <td>
-
-                                                    <button
-                                                        type="button"
-                                                        className="student-fee-view-button"
-                                                        onClick={() =>
-                                                            openStudent(
-                                                                student
-                                                            )
-                                                        }
-                                                    >
-                                                        View Fees
-                                                    </button>
-
-                                                </td>
-
-                                            </tr>
-
-                                        );
-
-                                    }
                                 )}
 
-                            </tbody>
+                            </div>
 
-                        </table>
+                        )}
 
                     </div>
 
-                )}
 
-            </div>
+                    {/* Selected student */}
 
+                    {selectedStudent && (
 
-            {/* =================================================
-                STUDENT FEE HISTORY MODAL
-            ================================================= */}
-
-            {selectedStudent && (
-
-                <div
-                    className="student-fee-modal-overlay"
-                    onClick={() =>
-                        setSelectedStudent(null)
-                    }
-                >
-
-                    <div
-                        className="student-fee-modal"
-                        onClick={(event) =>
-                            event.stopPropagation()
-                        }
-                    >
-
-                        <div className="student-fee-modal-header">
+                        <div className="student-fee-selected-student">
 
                             <div>
 
-                                <h2>
-                                    {selectedStudent.name}
-                                </h2>
+                                <strong>
+                                    {
+                                        getStudentName(
+                                            selectedStudent
+                                        )
+                                    }
+                                </strong>
 
-                                <p>
-                                    {selectedStudent.studentId}
-                                </p>
+                                <span>
+                                    ID:{" "}
+                                    {
+                                        selectedStudent.studentId
+                                    }
+                                </span>
 
                             </div>
 
                             <button
                                 type="button"
-                                className="student-fee-close-button"
-                                onClick={() =>
-                                    setSelectedStudent(null)
+                                className="student-fee-reset-button"
+                                onClick={
+                                    clearStudent
                                 }
                             >
-                                ×
+                                Change
                             </button>
 
                         </div>
 
+                    )}
 
-                        <div className="student-fee-modal-info">
 
-                            <span>
-                                Course:
-                                <strong>
-                                    {selectedStudent.course}
-                                </strong>
-                            </span>
+                    {/* Course / month / status */}
 
-                            <span>
-                                Teacher:
-                                <strong>
-                                    {selectedStudent.teacher}
-                                </strong>
-                            </span>
+                    {selectedStudent && (
+
+                        <div className="student-fee-record-form">
+
+
+                            <div>
+
+                                <label>
+                                    Course
+                                </label>
+
+                                <select
+                                    value={
+                                        selectedEnrollment?._id ||
+                                        ""
+                                    }
+                                    onChange={(event) => {
+
+                                        const enrollment =
+                                            studentEnrollments.find(
+                                                (item) =>
+                                                    item._id ===
+                                                    event.target.value
+                                            );
+
+                                        setSelectedEnrollment(
+                                            enrollment ||
+                                            null
+                                        );
+
+                                    }}
+                                >
+
+                                    <option value="">
+                                        Select Course
+                                    </option>
+
+                                    {studentEnrollments.map(
+                                        (enrollment) => (
+
+                                            <option
+                                                key={
+                                                    enrollment._id
+                                                }
+                                                value={
+                                                    enrollment._id
+                                                }
+                                            >
+                                                {
+                                                    getCourseName(
+                                                        enrollment
+                                                    )
+                                                }
+                                            </option>
+
+                                        )
+                                    )}
+
+                                </select>
+
+                            </div>
+
+
+                            <div>
+
+                                <label>
+                                    Month
+                                </label>
+
+                                <select
+                                    value={
+                                        selectedMonth
+                                    }
+                                    onChange={(event) =>
+                                        setSelectedMonth(
+                                            Number(
+                                                event.target.value
+                                            )
+                                        )
+                                    }
+                                >
+
+                                    {availableMonths.map(
+                                        (month) => (
+
+                                            <option
+                                                key={
+                                                    month.value
+                                                }
+                                                value={
+                                                    month.value
+                                                }
+                                            >
+                                                {
+                                                    month.name
+                                                }
+                                            </option>
+
+                                        )
+                                    )}
+
+                                </select>
+
+                            </div>
+
+
+                            {selectedEnrollment && (
+
+                                <div className="student-fee-record-status">
+
+                                    <label>
+                                        Status
+                                    </label>
+
+                                    <span
+                                        className={
+                                            `student-fee-status ${
+                                                getFeeStatus(
+                                                    selectedEnrollment._id
+                                                )
+                                            }`
+                                        }
+                                    >
+                                        {
+                                            getFeeStatus(
+                                                selectedEnrollment._id
+                                            ) === "paid"
+                                                ? "Paid"
+                                                : "Due"
+                                        }
+                                    </span>
+
+                                </div>
+
+                            )}
+
+
+                            {selectedEnrollment && (
+
+                                <button
+                                    type="button"
+                                    className="student-fee-pay-button"
+                                    onClick={() =>
+                                        openRecordFee(
+                                            selectedEnrollment
+                                        )
+                                    }
+                                >
+                                    Record Fee
+                                </button>
+
+                            )}
 
                         </div>
 
+                    )}
 
-                        <div className="student-fee-history">
-
-                            <h3>
-                                Fee History
-                            </h3>
+                </div>
 
 
-                            {selectedStudent.fees
-                                .sort(
-                                    (a, b) =>
-                                        new Date(
-                                            b.year,
-                                            b.month - 1
-                                        ) -
-                                        new Date(
-                                            a.year,
-                                            a.month - 1
-                                        )
-                                )
-                                .map((fee) => (
+                {/* =========================================
+                    RECENT PAID
+                ========================================= */}
 
-                                    <div
-                                        className="student-fee-history-row"
-                                        key={fee._id}
-                                    >
+                <div className="student-fee-card">
 
-                                        <div>
+                    <div className="student-fee-section-header">
 
-                                            <strong>
-                                                {formatMonth(
-                                                    fee.month,
-                                                    fee.year
-                                                )}
-                                            </strong>
+                        <div>
 
-                                            <small>
-                                                {fee.enrollment
-                                                    ?.course
-                                                    ?.name ||
-                                                    "—"}
-                                            </small>
+                            <h2>
+                                Recent Paid Fees
+                            </h2>
 
-                                        </div>
-
-
-                                        <strong>
-                                            {formatCurrency(
-                                                fee.amount
-                                            )}
-                                        </strong>
-
-
-                                        <span
-                                            className={
-                                                `student-fee-status ${fee.status}`
-                                            }
-                                        >
-                                            {fee.status === "paid"
-                                                ? "Paid"
-                                                : "Due"}
-                                        </span>
-
-
-                                        <div className="student-fee-history-action">
-
-                                            {fee.status ===
-                                            "due" ? (
-
-                                                <button
-                                                    type="button"
-                                                    className="student-fee-pay-button"
-                                                    onClick={() =>
-                                                        openPayment(
-                                                            fee
-                                                        )
-                                                    }
-                                                >
-                                                    Record Payment
-                                                </button>
-
-                                            ) : (
-
-                                                <small>
-                                                    Paid on{" "}
-                                                    {formatDate(
-                                                        fee.paidAt
-                                                    )}
-                                                </small>
-
-                                            )}
-
-                                        </div>
-
-                                    </div>
-
-                                ))}
+                            <span>
+                                Latest payments
+                            </span>
 
                         </div>
 
                     </div>
 
+
+                    {loading ? (
+
+                        <div className="student-fee-empty">
+                            Loading...
+                        </div>
+
+                    ) : recentPaidFees.length === 0 ? (
+
+                        <div className="student-fee-empty">
+                            No paid fees found.
+                        </div>
+
+                    ) : (
+
+                        <div className="student-fee-table-wrapper">
+
+                            <table className="student-fee-table">
+
+                                <thead>
+
+                                    <tr>
+
+                                        <th>
+                                            Student
+                                        </th>
+
+                                        <th>
+                                            ID
+                                        </th>
+
+                                        <th>
+                                            Course
+                                        </th>
+
+                                        <th>
+                                            Month
+                                        </th>
+
+                                        <th>
+                                            Amount
+                                        </th>
+
+                                        <th>
+                                            Status
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    {recentPaidFees.map(
+                                        (fee) => (
+
+                                            <tr
+                                                key={
+                                                    fee._id
+                                                }
+                                            >
+
+                                                <td>
+                                                    {
+                                                        getStudentName(
+                                                            fee.student
+                                                        )
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        fee.student
+                                                            ?.studentId
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        getCourseName(
+                                                            fee.enrollment
+                                                        )
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        getMonthName(
+                                                            fee.month
+                                                        )
+                                                    }{" "}
+                                                    {
+                                                        fee.year
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        formatCurrency(
+                                                            fee.amount
+                                                        )
+                                                    }
+                                                </td>
+
+                                                <td>
+
+                                                    <span className="student-fee-status paid">
+                                                        Paid
+                                                    </span>
+
+                                                </td>
+
+                                            </tr>
+
+                                        )
+                                    )}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    )}
+
                 </div>
 
-            )}
+            </div>
 
 
-            {/* =================================================
-                PAYMENT MODAL
-            ================================================= */}
+            {/* =============================================
+                MODAL
+            ============================================= */}
 
-            {selectedFee && (
+            {selectedEnrollment && (
 
                 <div
                     className="student-fee-modal-overlay"
-                    onClick={() =>
-                        setSelectedFee(null)
+                    onClick={
+                        closeModal
                     }
                 >
 
@@ -1218,207 +1432,200 @@ function StudentFeeManagement() {
                         }
                     >
 
-                        <div className="student-fee-modal-header">
+                        {findFee(
+                            selectedEnrollment._id
+                        )?.status === "paid" ? (
 
-                            <div>
+                            <>
 
-                                <h2>
-                                    Record Payment
-                                </h2>
+                                <div className="student-fee-modal-header">
 
-                                <p>
-                                    {getStudentName(
-                                        selectedFee
-                                    )}{" "}
-                                    ·{" "}
-                                    {formatMonth(
-                                        selectedFee.month,
-                                        selectedFee.year
-                                    )}
-                                </p>
+                                    <div>
 
-                            </div>
+                                        <h2>
+                                            Fee Already Paid
+                                        </h2>
 
-                            <button
-                                type="button"
-                                className="student-fee-close-button"
-                                onClick={() =>
-                                    setSelectedFee(null)
-                                }
-                            >
-                                ×
-                            </button>
+                                        <p>
+                                            {
+                                                getStudentName(
+                                                    selectedStudent
+                                                )
+                                            }
+                                        </p>
 
-                        </div>
+                                    </div>
 
+                                    <button
+                                        type="button"
+                                        className="student-fee-close-button"
+                                        onClick={
+                                            closeModal
+                                        }
+                                    >
+                                        ×
+                                    </button>
 
-                        <div className="student-fee-payment-amount">
-
-                            <span>
-                                Fee Amount
-                            </span>
-
-                            <strong>
-                                {formatCurrency(
-                                    selectedFee.amount
-                                )}
-                            </strong>
-
-                        </div>
+                                </div>
 
 
-                        <div className="student-fee-payment-form">
+                                <div className="student-fee-payment-message">
 
-                            <div>
+                                    <p>
 
-                                <label>
-                                    Payment Date
-                                </label>
+                                        The fee for{" "}
 
-                                <input
-                                    type="date"
-                                    value={
-                                        paymentForm.paidAt
-                                    }
-                                    onChange={(event) =>
-                                        setPaymentForm({
-                                            ...paymentForm,
-                                            paidAt:
-                                                event.target.value
-                                        })
-                                    }
-                                />
+                                        <strong>
+                                            {
+                                                getCourseName(
+                                                    selectedEnrollment
+                                                )
+                                            }
+                                        </strong>
 
-                            </div>
+                                        {" — "}
 
+                                        <strong>
+                                            {
+                                                currentMonthName
+                                            }{" "}
+                                            {
+                                                selectedYear
+                                            }
+                                        </strong>
 
-                            <div>
+                                        {" "}has already been
+                                        recorded as paid.
 
-                                <label>
-                                    Payment Method
-                                </label>
+                                    </p>
 
-                                <select
-                                    value={
-                                        paymentForm.paymentMethod
-                                    }
-                                    onChange={(event) =>
-                                        setPaymentForm({
-                                            ...paymentForm,
-                                            paymentMethod:
-                                                event.target.value
-                                        })
-                                    }
-                                >
-
-                                    <option value="cash">
-                                        Cash
-                                    </option>
-
-                                    <option value="upi">
-                                        UPI
-                                    </option>
-
-                                    <option value="bank_transfer">
-                                        Bank Transfer
-                                    </option>
-
-                                    <option value="card">
-                                        Card
-                                    </option>
-
-                                    <option value="other">
-                                        Other
-                                    </option>
-
-                                </select>
-
-                            </div>
+                                </div>
 
 
-                            <div>
+                                <div className="student-fee-payment-actions">
 
-                                <label>
-                                    Transaction ID
-                                </label>
+                                    <button
+                                        type="button"
+                                        className="student-fee-confirm-button"
+                                        onClick={
+                                            closeModal
+                                        }
+                                    >
+                                        OK
+                                    </button>
 
-                                <input
-                                    type="text"
-                                    placeholder="Optional"
-                                    value={
-                                        paymentForm.transactionId
-                                    }
-                                    onChange={(event) =>
-                                        setPaymentForm({
-                                            ...paymentForm,
-                                            transactionId:
-                                                event.target.value
-                                        })
-                                    }
-                                />
+                                </div>
 
-                            </div>
+                            </>
 
+                        ) : (
 
-                            <div>
+                            <>
 
-                                <label>
-                                    Notes
-                                </label>
+                                <div className="student-fee-modal-header">
 
-                                <textarea
-                                    rows="3"
-                                    placeholder="Optional"
-                                    value={
-                                        paymentForm.notes
-                                    }
-                                    onChange={(event) =>
-                                        setPaymentForm({
-                                            ...paymentForm,
-                                            notes:
-                                                event.target.value
-                                        })
-                                    }
-                                />
+                                    <div>
 
-                            </div>
+                                        <h2>
+                                            Record Fee
+                                        </h2>
 
-                        </div>
+                                        <p>
+                                            {
+                                                getStudentName(
+                                                    selectedStudent
+                                                )
+                                            }
+                                            {" · "}
+                                            {
+                                                getCourseName(
+                                                    selectedEnrollment
+                                                )
+                                            }
+                                        </p>
 
+                                    </div>
 
-                        <div className="student-fee-payment-actions">
+                                    <button
+                                        type="button"
+                                        className="student-fee-close-button"
+                                        onClick={
+                                            closeModal
+                                        }
+                                    >
+                                        ×
+                                    </button>
 
-                            <button
-                                type="button"
-                                className="student-fee-cancel-button"
-                                onClick={() =>
-                                    setSelectedFee(null)
-                                }
-                            >
-                                Cancel
-                            </button>
+                                </div>
 
 
-                            <button
-                                type="button"
-                                className="student-fee-confirm-button"
-                                disabled={
-                                    updatingId ===
-                                    selectedFee._id
-                                }
-                                onClick={
-                                    recordPayment
-                                }
-                            >
+                                <div className="student-fee-payment-amount">
 
-                                {updatingId ===
-                                selectedFee._id
-                                    ? "Saving..."
-                                    : "Mark as Paid"}
+                                    <span>
+                                        Fee Amount
+                                    </span>
 
-                            </button>
+                                    <strong>
+                                        {
+                                            formatCurrency(
+                                                selectedEnrollment.monthlyFee ||
+                                                selectedEnrollment.course?.monthlyFee
+                                            )
+                                        }
+                                    </strong>
 
-                        </div>
+                                </div>
+
+
+                                <div className="student-fee-payment-message">
+
+                                    <p>
+                                        Are you sure?
+                                    </p>
+
+                                    <p>
+                                        Did you receive the
+                                        full fee from the
+                                        student?
+                                    </p>
+
+                                </div>
+
+
+                                <div className="student-fee-payment-actions">
+
+                                    <button
+                                        type="button"
+                                        className="student-fee-cancel-button"
+                                        onClick={
+                                            closeModal
+                                        }
+                                    >
+                                        No, Cancel
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        className="student-fee-confirm-button"
+                                        disabled={
+                                            saving
+                                        }
+                                        onClick={
+                                            recordFee
+                                        }
+                                    >
+                                        {
+                                            saving
+                                                ? "Recording..."
+                                                : "Yes, Record"
+                                        }
+                                    </button>
+
+                                </div>
+
+                            </>
+
+                        )}
 
                     </div>
 
@@ -1429,7 +1636,6 @@ function StudentFeeManagement() {
         </div>
 
     );
-
 }
 
 export default StudentFeeManagement;
