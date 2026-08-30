@@ -1,26 +1,12 @@
 /* =====================================================
    DASHBOARD LAYOUT
-   Shared by:
-   Super Admin
-   Admin
-   Teacher
-   Student
-   ===================================================== */
-
-
-/* =====================================================
-   MAIN LAYOUT
    ===================================================== */
 
 .dashboard-layout {
     display: flex;
-
     min-height: 100vh;
-
     width: 100%;
-
     background-color: #f5f5f7;
-
     color: #1d1d1f;
 }
 
@@ -31,21 +17,17 @@
 
 .dashboard-sidebar {
     width: 250px;
-
     min-height: 100vh;
-
     flex-shrink: 0;
 
     display: flex;
     flex-direction: column;
 
-    background-color: #ffffff;
-
-    border-right: 1px solid #e5e5e7;
-
     box-sizing: border-box;
-
     padding: 0 12px 12px;
+
+    background-color: #ffffff;
+    border-right: 1px solid #e5e5e7;
 }
 
 
@@ -58,35 +40,29 @@
 
     display: flex;
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
 
-    border-bottom: 1px solid #e5e5e7;
-
     margin-bottom: 18px;
+    border-bottom: 1px solid #e5e5e7;
 }
-
 
 .dashboard-sidebar-logo h1 {
     margin: 0;
 
-    font-size: 26px;
-
-    font-weight: 600;
-
-    letter-spacing: -0.5px;
-
     color: #1d1d1f;
-}
 
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+}
 
 .dashboard-sidebar-logo p {
     margin: 8px 0 0;
 
-    font-size: 13px;
-
     color: #6e6e73;
+
+    font-size: 13px;
 }
 
 
@@ -96,58 +72,42 @@
 
 .dashboard-navigation {
     display: flex;
-
     flex-direction: column;
-
     gap: 4px;
 
     width: 100%;
 }
 
-
-/* =====================================================
-   NAVIGATION LINK
-   ===================================================== */
-
 .dashboard-nav-link {
     display: flex;
-
     align-items: center;
 
     width: 100%;
-
     min-height: 46px;
 
     padding: 0 14px;
-
     box-sizing: border-box;
 
     border-radius: 9px;
 
+    color: #1d1d1f;
     text-decoration: none;
 
     font-size: 14px;
-
     font-weight: 500;
-
-    color: #1d1d1f;
 
     transition:
         background-color 0.15s ease,
         color 0.15s ease;
 }
 
-
 .dashboard-nav-link:hover {
     background-color: #f2f2f4;
 }
 
-
 .dashboard-nav-link.active {
-    background-color: #eeeeF0;
-
+    background-color: #eeeef0;
     color: #0071e3;
-
     font-weight: 600;
 }
 
@@ -158,24 +118,21 @@
 
 .dashboard-logout {
     width: 100%;
-
     min-height: 46px;
 
     margin-top: auto;
-
     padding: 0 14px;
 
+    box-sizing: border-box;
+
     background-color: #ffffff;
-
     border: 1px solid #d2d2d7;
-
     border-radius: 9px;
 
-    font-size: 14px;
-
-    font-weight: 500;
-
     color: #1d1d1f;
+
+    font-size: 14px;
+    font-weight: 500;
 
     cursor: pointer;
 
@@ -184,10 +141,8 @@
         border-color 0.15s ease;
 }
 
-
 .dashboard-logout:hover {
     background-color: #f5f5f7;
-
     border-color: #b8b8bd;
 }
 
@@ -198,13 +153,10 @@
 
 .dashboard-main {
     flex: 1;
-
     min-width: 0;
-
     min-height: 100vh;
 
     display: flex;
-
     flex-direction: column;
 }
 
@@ -215,138 +167,18 @@
 
 .dashboard-header {
     height: 64px;
-
     flex-shrink: 0;
 
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
 
     padding: 0 26px;
-
     box-sizing: border-box;
 
     background-color: #ffffff;
-
     border-bottom: 1px solid #e5e5e7;
 }
-
-
-.dashboard-header h2 {
-    margin: 0;
-
-    font-size: 17px;
-
-    font-weight: 600;
-
-    color: #1d1d1f;
-}
-
-
-.dashboard-header-user {
-    font-size: 14px;
-
-    font-weight: 500;
-
-    color: #6e6e73;
-}
-
-
-/* =====================================================
-   PAGE CONTENT
-   ===================================================== */
-
-.dashboard-content {
-    flex: 1;
-
-    padding: 32px;
-
-    box-sizing: border-box;
-
-    overflow-x: auto;
-}
-
-
-/* =====================================================
-   RESPONSIVE
-   ===================================================== */
-
-@media (max-width: 800px) {
-
-    .dashboard-sidebar {
-        width: 210px;
-    }
-
-    .dashboard-content {
-        padding: 24px;
-    }
-
-}
-
-
-@media (max-width: 650px) {
-
-    .dashboard-layout {
-        flex-direction: column;
-    }
-
-
-    .dashboard-sidebar {
-        width: 100%;
-
-        min-height: auto;
-
-        border-right: none;
-
-        border-bottom: 1px solid #e5e5e7;
-
-        padding-bottom: 12px;
-    }
-
-
-    .dashboard-sidebar-logo {
-        height: 82px;
-
-        margin-bottom: 10px;
-    }
-
-
-    .dashboard-navigation {
-        flex-direction: row;
-
-        flex-wrap: wrap;
-    }
-
-
-    .dashboard-nav-link {
-        width: auto;
-
-        padding: 0 14px;
-    }
-
-
-    .dashboard-logout {
-        margin-top: 12px;
-    }
-
-
-    .dashboard-header {
-        height: 58px;
-
-        padding: 0 18px;
-    }
-
-
-    .dashboard-content {
-        padding: 20px;
-    }
-
-}
-/* =====================================================
-   HEADER TITLE
-   ===================================================== */
 
 .dashboard-header-title {
     min-width: 0;
@@ -354,6 +186,11 @@
 
 .dashboard-header-title h2 {
     margin: 0;
+
+    color: #1d1d1f;
+
+    font-size: 17px;
+    font-weight: 600;
 }
 
 
@@ -362,9 +199,24 @@
    ===================================================== */
 
 .dashboard-header-user {
+    position: relative;
+
     display: flex;
     align-items: center;
     gap: 14px;
+
+    color: #6e6e73;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+
+/* =====================================================
+   NOTIFICATION WRAPPER
+   ===================================================== */
+
+.dashboard-notification-wrapper {
+    position: relative;
 }
 
 
@@ -403,24 +255,265 @@
     line-height: 1;
 }
 
+/* =====================================================
+   NOTIFICATION COUNT
+   ===================================================== */
+
+.notification-count {
+    position: absolute;
+
+    top: -2px;
+    right: -3px;
+
+    min-width: 17px;
+    height: 17px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 4px;
+    box-sizing: border-box;
+
+    background-color: #ff3b30;
+    border: 2px solid #ffffff;
+    border-radius: 10px;
+
+    color: #ffffff;
+
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+
+    pointer-events: none;
+}
+/* =====================================================
+   NOTIFICATION DROPDOWN
+   ===================================================== */
+
+.notification-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+
+    width: 360px;
+    max-height: 470px;
+
+    overflow: hidden;
+
+    background-color: #ffffff;
+    border: 1px solid #e5e5e7;
+    border-radius: 12px;
+
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.10);
+
+    z-index: 1000;
+}
+
+
+/* =====================================================
+   DROPDOWN HEADER
+   ===================================================== */
+
+.notification-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 15px 17px;
+
+    border-bottom: 1px solid #e5e5e7;
+}
+
+.notification-dropdown-header h3 {
+    margin: 0;
+
+    color: #1d1d1f;
+
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.notification-dropdown-header span {
+    min-width: 22px;
+    height: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 6px;
+    box-sizing: border-box;
+
+    background-color: #f2f2f4;
+    border-radius: 11px;
+
+    color: #6e6e73;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+/* =====================================================
+   NOTIFICATION LIST
+   ===================================================== */
+
+.notification-dropdown-list {
+    max-height: 405px;
+    overflow-y: auto;
+}
+
+
+/* =====================================================
+   NOTIFICATION ITEM
+   ===================================================== */
+
+.notification-dropdown-item {
+    padding: 14px 17px;
+
+    border-bottom: 1px solid #f0f0f2;
+
+    cursor: default;
+
+    transition: background-color 0.15s ease;
+}
+
+.notification-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.notification-dropdown-item:hover {
+    background-color: #fafafa;
+}
+
+.notification-dropdown-item h4 {
+    margin: 0 0 5px;
+
+    color: #1d1d1f;
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.notification-dropdown-item p {
+    margin: 0 0 7px;
+
+    color: #6e6e73;
+
+    font-size: 13px;
+    line-height: 1.45;
+
+    word-break: break-word;
+}
+
+.notification-dropdown-item small {
+    color: #8e8e93;
+
+    font-size: 11px;
+}
+
+
+/* =====================================================
+   EMPTY / LOADING STATE
+   ===================================================== */
+
+.notification-dropdown-empty {
+    padding: 35px 20px;
+
+    text-align: center;
+
+    color: #6e6e73;
+
+    font-size: 13px;
+}
+
 
 /* =====================================================
    USER NAME
    ===================================================== */
 
 .dashboard-user-name {
+    color: #1d1d1f;
+
     font-size: 14px;
     font-weight: 500;
-    color: #1d1d1f;
+
     white-space: nowrap;
 }
 
 
 /* =====================================================
-   MOBILE
+   PAGE CONTENT
    ===================================================== */
 
+.dashboard-content {
+    flex: 1;
+
+    padding: 32px;
+    box-sizing: border-box;
+
+    overflow-x: auto;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 800px) {
+
+    .dashboard-sidebar {
+        width: 210px;
+    }
+
+    .dashboard-content {
+        padding: 24px;
+    }
+
+}
+
+
 @media (max-width: 650px) {
+
+    .dashboard-layout {
+        flex-direction: column;
+    }
+
+    .dashboard-sidebar {
+        width: 100%;
+        min-height: auto;
+
+        padding-bottom: 12px;
+
+        border-right: none;
+        border-bottom: 1px solid #e5e5e7;
+    }
+
+    .dashboard-sidebar-logo {
+        height: 82px;
+        margin-bottom: 10px;
+    }
+
+    .dashboard-navigation {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-nav-link {
+        width: auto;
+        padding: 0 14px;
+    }
+
+    .dashboard-logout {
+        margin-top: 12px;
+    }
+
+    .dashboard-header {
+        height: 58px;
+        padding: 0 18px;
+    }
 
     .dashboard-header-user {
         gap: 8px;
@@ -436,6 +529,21 @@
 
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .notification-dropdown {
+        position: fixed;
+
+        top: 58px;
+        right: 12px;
+        left: 12px;
+
+        width: auto;
+        max-width: none;
+    }
+
+    .dashboard-content {
+        padding: 20px;
     }
 
 }
