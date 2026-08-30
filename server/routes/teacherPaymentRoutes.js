@@ -11,60 +11,85 @@ import {
 import authMiddleware from "../middleware/authMiddleware.js";
 import permissionMiddleware from "../middleware/permissionMiddleware.js";
 
+
 const router = express.Router();
 
 
 // =====================================================
-// ADMIN — GET ALL TEACHER PAYMENTS
+// SUPER ADMIN — GET ALL TEACHER PAYMENTS
 // =====================================================
 
 router.get(
     "/",
     authMiddleware,
-    permissionMiddleware("teachers"),
+    permissionMiddleware(
+        "teacherPayments",
+        {
+            superAdminOnly: true
+        }
+    ),
     getTeacherPayments
 );
 
 
 // =====================================================
-// ADMIN — GET PAYMENT HISTORY OF ONE TEACHER
+// SUPER ADMIN — GET PAYMENT HISTORY OF ONE TEACHER
 // =====================================================
 
 router.get(
     "/teacher/:teacherId",
     authMiddleware,
-    permissionMiddleware("teachers"),
+    permissionMiddleware(
+        "teacherPayments",
+        {
+            superAdminOnly: true
+        }
+    ),
     getTeacherPaymentsByTeacher
 );
 
 
 // =====================================================
-// ADMIN — GENERATE MONTHLY TEACHER PAYMENT
+// SUPER ADMIN — GENERATE MONTHLY TEACHER PAYMENT
 // =====================================================
 
 router.post(
     "/generate",
     authMiddleware,
-    permissionMiddleware("teachers"),
+    permissionMiddleware(
+        "teacherPayments",
+        {
+            superAdminOnly: true
+        }
+    ),
     generateTeacherPayment
 );
 
 
 // =====================================================
-// ADMIN — UPDATE TEACHER PAYMENT
-// Mark paid / due, payment date and method
+// SUPER ADMIN — UPDATE TEACHER PAYMENT
+//
+// Mark paid / due
+// Set payment date
+// Set payment method
 // =====================================================
 
 router.put(
     "/:id",
     authMiddleware,
-    permissionMiddleware("teachers"),
+    permissionMiddleware(
+        "teacherPayments",
+        {
+            superAdminOnly: true
+        }
+    ),
     updateTeacherPayment
 );
 
 
 // =====================================================
 // TEACHER — VIEW OWN PAYMENT HISTORY
+//
 // Read only
 // =====================================================
 
