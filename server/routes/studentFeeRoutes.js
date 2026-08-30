@@ -1,10 +1,12 @@
 import express from "express";
 
 import {
-    createPayment,
-    getPaymentsByStudent,
-    getPaymentsByEnrollment,
-    updatePayment
+    createFee,
+    getAllFees,
+    getFeesByStudent,
+    getFeesByEnrollment,
+    getFeesByTeacher,
+    updateFee
 } from "../controllers/studentFeeController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -14,50 +16,73 @@ const router = express.Router();
 
 
 // =====================================================
-// CREATE PAYMENT
+// SUPER ADMIN / ADMIN — GET ALL STUDENT FEES
+// =====================================================
+
+router.get(
+    "/",
+    authMiddleware,
+    permissionMiddleware("studentFees"),
+    getAllFees
+);
+
+
+// =====================================================
+// SUPER ADMIN / ADMIN — CREATE FEE
 // =====================================================
 
 router.post(
     "/",
     authMiddleware,
-    permissionMiddleware("enrollments"),
-    createPayment
+    permissionMiddleware("studentFees"),
+    createFee
 );
 
 
 // =====================================================
-// GET PAYMENTS BY STUDENT
+// STUDENT / ADMIN — GET FEES BY STUDENT
 // =====================================================
 
 router.get(
     "/student/:studentId",
     authMiddleware,
-    permissionMiddleware("students"),
-    getPaymentsByStudent
+    getFeesByStudent
 );
 
 
 // =====================================================
-// GET PAYMENTS BY ENROLLMENT
+// ADMIN — GET FEES BY ENROLLMENT
 // =====================================================
 
 router.get(
     "/enrollment/:enrollmentId",
     authMiddleware,
     permissionMiddleware("enrollments"),
-    getPaymentsByEnrollment
+    getFeesByEnrollment
 );
 
 
 // =====================================================
-// UPDATE PAYMENT
+// TEACHER — VIEW FEES OF CURRENT STUDENTS
+// READ ONLY
+// =====================================================
+
+router.get(
+    "/teacher/my",
+    authMiddleware,
+    getFeesByTeacher
+);
+
+
+// =====================================================
+// SUPER ADMIN / ADMIN — UPDATE FEE
 // =====================================================
 
 router.put(
     "/:id",
     authMiddleware,
-    permissionMiddleware("enrollments"),
-    updatePayment
+    permissionMiddleware("studentFees"),
+    updateFee
 );
 
 
