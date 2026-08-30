@@ -4,6 +4,7 @@ import {
     createTeacher,
     getTeachers,
     getTeacherById,
+    getMyTeacherProfile,
     updateTeacher,
     updateTeacherStatus
 } from "../controllers/teacherController.js";
@@ -25,6 +26,12 @@ router.get(
     authMiddleware,
     permissionMiddleware("teachers"),
     getTeachers
+);
+
+router.get(
+    "/me",
+    authMiddleware,
+    getMyTeacherProfile
 );
 
 router.get(
