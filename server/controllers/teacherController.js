@@ -237,6 +237,51 @@ export const getTeacherById = async (req, res) => {
     }
 };
 
+// =====================================================
+// GET LOGGED-IN TEACHER PROFILE
+// =====================================================
+
+export const getMyTeacherProfile = async (req, res) => {
+    try {
+
+        const teacher = await Teacher.findOne({
+            user: req.user._id
+        })
+        .populate(
+            "user",
+            "name email isActive"
+        )
+        .select("-__v");
+
+
+        if (!teacher) {
+            return res.status(404).json({
+                message:
+                    "Teacher profile not found"
+            });
+        }
+
+
+        return res.status(200).json({
+            message:
+                "Teacher profile fetched successfully",
+
+            teacher
+        });
+
+    } catch (error) {
+
+        console.error(
+            "GET MY TEACHER PROFILE ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to fetch teacher profile"
+        });
+    }
+};
 
 // =====================================================
 // UPDATE TEACHER
