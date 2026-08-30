@@ -418,3 +418,103 @@ export const getTeachingSlotsByTeacher = async (req, res) => {
         });
     }
 };
+
+// =====================================================
+// GET LOGGED-IN TEACHER'S TEACHING SLOTS
+// =====================================================
+
+export const getMyTeachingSlots = async (req, res) => {
+    try {
+
+        // -------------------------------------------------
+        // Find Teacher profile belonging to logged-in User
+        // -------------------------------------------------
+
+        const teacher = await Teacher.findOne({
+            user: req.user._id
+        });
+
+        if (!teacher) {
+            return res.status(404).json({
+                message: "Teacher profile not found"
+            });
+        }
+
+
+        // -------------------------------------------------
+        // Get active teaching slots
+        // -------------------------------------------------
+
+        const teachingSlots =
+            await TeachingSlot.find({
+                teacher: teacher._id,
+                status: "active"
+            })
+            .populate("course")
+            .sort({
+                dayOfWeek: 1,
+                startTime: 1
+            });
+
+
+        // -------------------------------------------------
+        // Add enrollment information
+        // -------------------------------------------------
+
+        const slotsWithEnrollmentCount =
+            await Promise.all(
+
+                teachingSlots.map(async (slot) => {
+
+                    const enrolledStudents =
+                        await Enrollment.countDocuments({
+                            teachingSlot: slot._id,
+                            status: "active"
+                        });
+
+
+                    return {
+                        ...slot.toObject(),
+
+                        enrolledStudents,
+
+                        availableSeats:
+                            Math.max(
+                                slot.maxStudents -
+                                enrolledStudents,
+                                0
+                            )
+                    };
+
+                })
+
+            );
+
+
+        return res.status(200).json({
+
+            message:
+                "Your teaching slots fetched successfully",
+
+            count:
+                slotsWithEnrollmentCount.length,
+
+            teachingSlots:
+                slotsWithEnrollmentCount
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "GET MY TEACHING SLOTS ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to fetch my teaching slots"
+        });
+
+    }
+};
