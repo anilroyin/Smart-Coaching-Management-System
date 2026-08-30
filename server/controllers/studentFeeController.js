@@ -1,455 +1,500 @@
 import mongoose from "mongoose";
-
-import Payment from "../models/studentFee.js";
+import Fee from "../models/studentFee.js";
 import Enrollment from "../models/enrollment.js";
 import Student from "../models/student.js";
+import Teacher from "../models/teacher.js";
+
+const feePopulate = [
+    {
+        path: "student",
+        populate: {
+            path: "user",
+            select: "name email"
+        }
+    },
+    {
+        path: "enrollment",
+        populate: [
+            {
+                path: "course",
+                select: "name monthlyFee"
+            },
+            {
+                path: "teacher",
+                populate: {
+                    path: "user",
+                    select: "name email"
+                }
+            },
+            {
+                path: "teachingSlot"
+            }
+        ]
+    }
+];
+
+const validId = (id) =>
+    mongoose.Types.ObjectId.isValid(id);
+
+const validMonth = (month) =>
+    Number.isInteger(month) &&
+    month >= 1 &&
+    month <= 12;
+
+const validYear = (year) =>
+    Number.isInteger(year) &&
+    year >= 2000;
+
+const getFees = (query, sort = { year: -1, month: -1 }) =>
+    Fee.find(query)
+        .populate(feePopulate)
+        .sort(sort);
+
+const getSummary = (fees) =>
+    fees.reduce(
+        (summary, fee) => {
+            const amount = Number(fee.amount || 0);
+
+            summary.totalFees += amount;
+
+            if (fee.status === "paid") {
+                summary.totalCollected += amount;
+                summary.paidCount++;
+            } else {
+                summary.totalDue += amount;
+                summary.dueCount++;
+            }
+
+            return summary;
+        },
+        {
+            totalFees: 0,
+            totalCollected: 0,
+            totalDue: 0,
+            paidCount: 0,
+            dueCount: 0
+        }
+    );
+
+const getFilters = (query) => {
+    const filters = {};
+    const { month, year, status, studentId } = query;
+
+    if (month !== undefined) {
+        const value = Number(month);
+
+        if (!validMonth(value))
+            return { error: "Invalid fee month" };
+
+        filters.month = value;
+    }
+
+    if (year !== undefined) {
+        const value = Number(year);
+
+        if (!validYear(value))
+            return { error: "Invalid fee year" };
+
+        filters.year = value;
+    }
+
+    if (status !== undefined) {
+        if (!["paid", "due"].includes(status))
+            return { error: "Invalid fee status" };
+
+        filters.status = status;
+    }
+
+    if (studentId !== undefined) {
+        if (!validId(studentId))
+            return { error: "Invalid student ID" };
+
+        filters.student = studentId;
+    }
+
+    return { filters };
+};
 
 
 // =====================================================
-// CREATE PAYMENT
+// CREATE FEE
 // =====================================================
 
-export const createPayment = async (req, res) => {
+export const createFee = async (req, res) => {
     try {
         const {
             enrollmentId,
             month,
             year,
             amount,
-            status,
+            status = "due",
             paidAt,
             paymentMethod,
             transactionId,
             notes
         } = req.body;
 
-
-        // -------------------------------------------------
-        // Validate enrollment ID
-        // -------------------------------------------------
-
-        if (!mongoose.Types.ObjectId.isValid(enrollmentId)) {
+        if (!validId(enrollmentId))
             return res.status(400).json({
                 message: "Invalid enrollment ID"
             });
-        }
 
-
-        // -------------------------------------------------
-        // Validate month
-        // -------------------------------------------------
-
-        if (
-            typeof month !== "number" ||
-            month < 1 ||
-            month > 12
-        ) {
+        if (!validMonth(month))
             return res.status(400).json({
-                message: "Invalid payment month"
+                message: "Invalid fee month"
             });
-        }
 
-
-        // -------------------------------------------------
-        // Validate year
-        // -------------------------------------------------
-
-        if (
-            typeof year !== "number" ||
-            year < 2000
-        ) {
+        if (!validYear(year))
             return res.status(400).json({
-                message: "Invalid payment year"
+                message: "Invalid fee year"
             });
-        }
 
-
-        // -------------------------------------------------
-        // Check enrollment
-        // -------------------------------------------------
+        if (!["paid", "due"].includes(status))
+            return res.status(400).json({
+                message: "Invalid fee status"
+            });
 
         const enrollment =
             await Enrollment.findById(enrollmentId);
 
-        if (!enrollment) {
+        if (!enrollment)
             return res.status(404).json({
                 message: "Enrollment not found"
             });
-        }
-
-
-        // -------------------------------------------------
-        // Check student
-        // -------------------------------------------------
 
         const student =
-            await Student.findById(
-                enrollment.student
-            );
+            await Student.findById(enrollment.student);
 
-        if (!student) {
+        if (!student)
             return res.status(404).json({
                 message: "Student not found"
             });
-        }
 
-
-        // -------------------------------------------------
-        // Determine payment amount
-        //
-        // If admin provides an amount, use it.
-        // Otherwise use the enrollment monthly fee.
-        // -------------------------------------------------
-
-        const paymentAmount =
+        const feeAmount =
             amount !== undefined
-                ? amount
+                ? Number(amount)
                 : enrollment.monthlyFee;
 
-
-        if (
-            typeof paymentAmount !== "number" ||
-            paymentAmount < 0
-        ) {
+        if (!Number.isFinite(feeAmount) || feeAmount < 0)
             return res.status(400).json({
-                message: "Invalid payment amount"
+                message: "Invalid fee amount"
             });
-        }
 
-
-        // -------------------------------------------------
-        // Prevent duplicate monthly payment
-        // -------------------------------------------------
-
-        const existingPayment =
-            await Payment.findOne({
+        const existingFee =
+            await Fee.findOne({
                 enrollment: enrollmentId,
                 month,
                 year
             });
 
-        if (existingPayment) {
+        if (existingFee)
             return res.status(409).json({
                 message:
-                    "Payment record already exists for this month"
-            });
-        }
-
-
-        // -------------------------------------------------
-        // Determine status
-        // -------------------------------------------------
-
-        const paymentStatus =
-            status || "paid";
-
-
-        if (
-            !["paid", "due"].includes(
-                paymentStatus
-            )
-        ) {
-            return res.status(400).json({
-                message: "Invalid payment status"
-            });
-        }
-
-
-        // -------------------------------------------------
-        // Paid date
-        // -------------------------------------------------
-
-        let paymentDate;
-
-        if (paymentStatus === "paid") {
-            paymentDate =
-                paidAt
-                    ? new Date(paidAt)
-                    : new Date();
-        }
-
-
-        // -------------------------------------------------
-        // Create payment
-        // -------------------------------------------------
-
-        const payment =
-            await Payment.create({
-                enrollment: enrollmentId,
-
-                student: enrollment.student,
-
-                month,
-
-                year,
-
-                amount: paymentAmount,
-
-                status: paymentStatus,
-
-                paidAt: paymentDate,
-
-                paymentMethod,
-
-                transactionId,
-
-                notes
+                    "Fee record already exists for this month"
             });
 
+        const fee = await Fee.create({
+            enrollment: enrollmentId,
+            student: enrollment.student,
+            month,
+            year,
+            amount: feeAmount,
+            status,
+            paidAt:
+                status === "paid"
+                    ? paidAt
+                        ? new Date(paidAt)
+                        : new Date()
+                    : undefined,
+            paymentMethod,
+            transactionId,
+            notes
+        });
 
-        // -------------------------------------------------
-        // Populate response
-        // -------------------------------------------------
+        const populatedFee =
+            await Fee.findById(fee._id)
+                .populate(feePopulate);
 
-        const populatedPayment =
-            await Payment.findById(
-                payment._id
-            )
-                .populate({
-                    path: "student",
-                    populate: {
-                        path: "user",
-                        select: "name email"
-                    }
-                })
-                .populate({
-                    path: "enrollment",
-                    populate: [
-                        {
-                            path: "course",
-                            select:
-                                "name monthlyFee"
-                        },
-                        {
-                            path: "teacher",
-                            populate: {
-                                path: "user",
-                                select:
-                                    "name email"
-                            }
-                        },
-                        {
-                            path: "teachingSlot"
-                        }
-                    ]
-                });
-
-
-        res.status(201).json({
-            message:
-                "Payment created successfully",
-
-            payment: populatedPayment
+        return res.status(201).json({
+            message: "Fee created successfully",
+            fee: populatedFee
         });
 
     } catch (error) {
+        console.error("CREATE FEE ERROR:", error);
 
-        console.error(
-            "CREATE PAYMENT ERROR:",
-            error
-        );
-
-        res.status(500).json({
-            message:
-                "Failed to create payment"
+        return res.status(500).json({
+            message: "Failed to create fee"
         });
     }
 };
 
 
 // =====================================================
-// GET PAYMENTS BY STUDENT
+// GET ALL FEES
 // =====================================================
 
-export const getPaymentsByStudent = async (
-    req,
-    res
-) => {
+export const getAllFees = async (req, res) => {
+    try {
+        const result = getFilters(req.query);
+
+        if (result.error)
+            return res.status(400).json({
+                message: result.error
+            });
+
+        const fees = await getFees(result.filters, {
+            year: -1,
+            month: -1,
+            createdAt: -1
+        });
+
+        return res.status(200).json({
+            message: "Student fees fetched successfully",
+            count: fees.length,
+            summary: getSummary(fees),
+            fees
+        });
+
+    } catch (error) {
+        console.error("GET ALL FEES ERROR:", error);
+
+        return res.status(500).json({
+            message: "Failed to fetch student fees"
+        });
+    }
+};
+
+
+// =====================================================
+// GET FEES BY STUDENT
+// =====================================================
+
+export const getFeesByStudent = async (req, res) => {
     try {
         const { studentId } = req.params;
 
-
-        // -------------------------------------------------
-        // Validate student ID
-        // -------------------------------------------------
-
-        if (
-            !mongoose.Types.ObjectId.isValid(
-                studentId
-            )
-        ) {
+        if (!validId(studentId))
             return res.status(400).json({
                 message: "Invalid student ID"
             });
-        }
-
-
-        // -------------------------------------------------
-        // Check student
-        // -------------------------------------------------
 
         const student =
             await Student.findById(studentId);
 
-        if (!student) {
+        if (!student)
             return res.status(404).json({
                 message: "Student not found"
             });
+
+        // Teacher cannot access this endpoint.
+        if (req.user.role === "teacher") {
+            return res.status(403).json({
+                message: "Access denied"
+            });
         }
 
-
-        // -------------------------------------------------
-        // Get all payments
-        // -------------------------------------------------
-
-        const payments =
-            await Payment.find({
-                student: studentId
-            })
-                .populate({
-                    path: "enrollment",
-                    populate: [
-                        {
-                            path: "course",
-                            select:
-                                "name monthlyFee"
-                        },
-                        {
-                            path: "teacher",
-                            populate: {
-                                path: "user",
-                                select:
-                                    "name email"
-                            }
-                        },
-                        {
-                            path: "teachingSlot"
-                        }
-                    ]
-                })
-                .sort({
-                    year: -1,
-                    month: -1
+        // Student can only see their own fees.
+        if (req.user.role === "student") {
+            if (
+                student.user.toString() !==
+                req.user._id.toString()
+            ) {
+                return res.status(403).json({
+                    message:
+                        "You are not allowed to view these fees"
                 });
+            }
+        }
 
+        const fees = await getFees(
+            { student: studentId }
+        );
 
-        res.status(200).json({
-            message:
-                "Student payments fetched successfully",
-
-            count: payments.length,
-
-            payments
+        return res.status(200).json({
+            message: "Student fees fetched successfully",
+            count: fees.length,
+            summary: getSummary(fees),
+            fees
         });
 
     } catch (error) {
+        console.error("GET STUDENT FEES ERROR:", error);
 
-        console.error(
-            "GET STUDENT PAYMENTS ERROR:",
-            error
-        );
-
-        res.status(500).json({
-            message:
-                "Failed to fetch student payments"
+        return res.status(500).json({
+            message: "Failed to fetch student fees"
         });
     }
 };
 
 
 // =====================================================
-// GET PAYMENTS BY ENROLLMENT
+// GET FEES BY ENROLLMENT
 // =====================================================
 
-export const getPaymentsByEnrollment = async (
-    req,
-    res
-) => {
+export const getFeesByEnrollment = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
 
-
-        // -------------------------------------------------
-        // Validate enrollment ID
-        // -------------------------------------------------
-
-        if (
-            !mongoose.Types.ObjectId.isValid(
-                enrollmentId
-            )
-        ) {
+        if (!validId(enrollmentId))
             return res.status(400).json({
-                message:
-                    "Invalid enrollment ID"
+                message: "Invalid enrollment ID"
             });
-        }
-
-
-        // -------------------------------------------------
-        // Check enrollment
-        // -------------------------------------------------
 
         const enrollment =
-            await Enrollment.findById(
-                enrollmentId
-            );
+            await Enrollment.findById(enrollmentId);
 
-        if (!enrollment) {
+        if (!enrollment)
             return res.status(404).json({
-                message:
-                    "Enrollment not found"
+                message: "Enrollment not found"
             });
-        }
 
+        const fees = await getFees({
+            enrollment: enrollmentId
+        });
 
-        // -------------------------------------------------
-        // Get payments
-        // -------------------------------------------------
-
-        const payments =
-            await Payment.find({
-                enrollment: enrollmentId
-            })
-                .sort({
-                    year: -1,
-                    month: -1
-                });
-
-
-        res.status(200).json({
+        return res.status(200).json({
             message:
-                "Enrollment payments fetched successfully",
-
-            count: payments.length,
-
-            payments
+                "Enrollment fees fetched successfully",
+            count: fees.length,
+            summary: getSummary(fees),
+            fees
         });
 
     } catch (error) {
-
         console.error(
-            "GET ENROLLMENT PAYMENTS ERROR:",
+            "GET ENROLLMENT FEES ERROR:",
             error
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             message:
-                "Failed to fetch enrollment payments"
+                "Failed to fetch enrollment fees"
         });
     }
 };
 
 
 // =====================================================
-// UPDATE PAYMENT
+// GET FEES BY TEACHER
 // =====================================================
 
-export const updatePayment = async (
-    req,
-    res
-) => {
+export const getFeesByTeacher = async (req, res) => {
+    try {
+        const teacher =
+            await Teacher.findOne({
+                user: req.user._id
+            });
+
+        if (!teacher)
+            return res.status(404).json({
+                message:
+                    "Teacher profile not found"
+            });
+
+        const result = getFilters(req.query);
+
+        if (result.error)
+            return res.status(400).json({
+                message: result.error
+            });
+
+        const enrollments =
+            await Enrollment.find({
+                teacher: teacher._id,
+                status: "active"
+            }).select("_id");
+
+        const enrollmentIds =
+            enrollments.map(
+                enrollment => enrollment._id
+            );
+
+        if (!enrollmentIds.length) {
+            return res.status(200).json({
+                message:
+                    "Your student fees fetched successfully",
+                count: 0,
+                summary: {
+                    totalFees: 0,
+                    totalCollected: 0,
+                    totalDue: 0,
+                    paidCount: 0,
+                    dueCount: 0,
+                    totalStudents: 0,
+                    studentsWithFeeRecords: 0
+                },
+                fees: []
+            });
+        }
+
+        result.filters.enrollment = {
+            $in: enrollmentIds
+        };
+
+        const fees = await getFees(
+            result.filters
+        );
+
+        const summary = getSummary(fees);
+
+        const students =
+            new Set(
+                fees
+                    .filter(fee => fee.student?._id)
+                    .map(fee =>
+                        fee.student._id.toString()
+                    )
+            );
+
+        return res.status(200).json({
+            message:
+                "Your student fees fetched successfully",
+            count: fees.length,
+            summary: {
+                ...summary,
+                totalStudents:
+                    enrollmentIds.length,
+                studentsWithFeeRecords:
+                    students.size
+            },
+            fees
+        });
+
+    } catch (error) {
+        console.error(
+            "GET TEACHER FEES ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            message:
+                "Failed to fetch your student fees"
+        });
+    }
+};
+
+
+// =====================================================
+// UPDATE FEE
+// =====================================================
+
+export const updateFee = async (req, res) => {
     try {
         const { id } = req.params;
+
+        if (!validId(id))
+            return res.status(400).json({
+                message: "Invalid fee ID"
+            });
+
+        const fee =
+            await Fee.findById(id);
+
+        if (!fee)
+            return res.status(404).json({
+                message: "Fee not found"
+            });
 
         const {
             status,
@@ -459,166 +504,52 @@ export const updatePayment = async (
             notes
         } = req.body;
 
-
-        // -------------------------------------------------
-        // Validate payment ID
-        // -------------------------------------------------
-
-        if (
-            !mongoose.Types.ObjectId.isValid(id)
-        ) {
-            return res.status(400).json({
-                message:
-                    "Invalid payment ID"
-            });
-        }
-
-
-        // -------------------------------------------------
-        // Find payment
-        // -------------------------------------------------
-
-        const payment =
-            await Payment.findById(id);
-
-        if (!payment) {
-            return res.status(404).json({
-                message:
-                    "Payment not found"
-            });
-        }
-
-
-        // -------------------------------------------------
-        // Update allowed fields
-        // -------------------------------------------------
-
         if (status !== undefined) {
-
-            if (
-                !["paid", "due"].includes(
-                    status
-                )
-            ) {
+            if (!["paid", "due"].includes(status))
                 return res.status(400).json({
-                    message:
-                        "Invalid payment status"
+                    message: "Invalid fee status"
                 });
-            }
 
-            payment.status = status;
+            fee.status = status;
         }
 
-
-        if (paidAt !== undefined) {
-            payment.paidAt =
+        if (paidAt !== undefined)
+            fee.paidAt =
                 paidAt
                     ? new Date(paidAt)
                     : undefined;
-        }
 
+        if (paymentMethod !== undefined)
+            fee.paymentMethod = paymentMethod;
 
-        if (
-            paymentMethod !== undefined
-        ) {
-            payment.paymentMethod =
-                paymentMethod;
-        }
+        if (transactionId !== undefined)
+            fee.transactionId = transactionId;
 
+        if (notes !== undefined)
+            fee.notes = notes;
 
-        if (
-            transactionId !== undefined
-        ) {
-            payment.transactionId =
-                transactionId;
-        }
+        if (fee.status === "paid" && !fee.paidAt)
+            fee.paidAt = new Date();
 
+        if (fee.status === "due")
+            fee.paidAt = undefined;
 
-        if (notes !== undefined) {
-            payment.notes = notes;
-        }
+        await fee.save();
 
+        const updatedFee =
+            await Fee.findById(fee._id)
+                .populate(feePopulate);
 
-        // -------------------------------------------------
-        // Automatically set paid date when marking paid
-        // -------------------------------------------------
-
-        if (
-            payment.status === "paid" &&
-            !payment.paidAt
-        ) {
-            payment.paidAt = new Date();
-        }
-
-
-        // -------------------------------------------------
-        // Remove paid date when marked due
-        // -------------------------------------------------
-
-        if (
-            payment.status === "due"
-        ) {
-            payment.paidAt = undefined;
-        }
-
-
-        await payment.save();
-
-
-        // -------------------------------------------------
-        // Return updated payment
-        // -------------------------------------------------
-
-        const updatedPayment =
-            await Payment.findById(id)
-                .populate({
-                    path: "student",
-                    populate: {
-                        path: "user",
-                        select:
-                            "name email"
-                    }
-                })
-                .populate({
-                    path: "enrollment",
-                    populate: [
-                        {
-                            path: "course",
-                            select:
-                                "name monthlyFee"
-                        },
-                        {
-                            path: "teacher",
-                            populate: {
-                                path: "user",
-                                select:
-                                    "name email"
-                            }
-                        },
-                        {
-                            path: "teachingSlot"
-                        }
-                    ]
-                });
-
-
-        res.status(200).json({
-            message:
-                "Payment updated successfully",
-
-            payment: updatedPayment
+        return res.status(200).json({
+            message: "Fee updated successfully",
+            fee: updatedFee
         });
 
     } catch (error) {
+        console.error("UPDATE FEE ERROR:", error);
 
-        console.error(
-            "UPDATE PAYMENT ERROR:",
-            error
-        );
-
-        res.status(500).json({
-            message:
-                "Failed to update payment"
+        return res.status(500).json({
+            message: "Failed to update fee"
         });
     }
 };
