@@ -4,15 +4,24 @@ import {
     createTeachingSlot,
     getTeachingSlots,
     createMultipleTeachingSlots,
-    getTeachingSlotsByTeacher
+    getTeachingSlotsByTeacher,
+    getMyTeachingSlots
 } from "../controllers/teachingSlotController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
-import permissionMiddleware from "../middleware/permissionMiddleware.js";
+
+import permissionMiddleware
+    from "../middleware/permissionMiddleware.js";
+
 
 const router = express.Router();
 
-// Create a teaching slot
+
+// =====================================================
+// CREATE TEACHING SLOT
+// ADMIN / PERMITTED USERS
+// =====================================================
+
 router.post(
     "/",
     authMiddleware,
@@ -20,7 +29,11 @@ router.post(
     createTeachingSlot
 );
 
-// Create multiple teaching slots
+
+// =====================================================
+// CREATE MULTIPLE TEACHING SLOTS
+// =====================================================
+
 router.post(
     "/bulk",
     authMiddleware,
@@ -28,7 +41,12 @@ router.post(
     createMultipleTeachingSlots
 );
 
-// Get all teaching slots
+
+// =====================================================
+// GET ALL TEACHING SLOTS
+// ADMIN / PERMITTED USERS
+// =====================================================
+
 router.get(
     "/",
     authMiddleware,
@@ -36,12 +54,30 @@ router.get(
     getTeachingSlots
 );
 
-// Get teaching slots of a particular teacher
+
+// =====================================================
+// GET LOGGED-IN TEACHER'S TEACHING SLOTS
+// TEACHER'S OWN SCHEDULE
+// =====================================================
+
+router.get(
+    "/me",
+    authMiddleware,
+    getMyTeachingSlots
+);
+
+
+// =====================================================
+// GET TEACHING SLOTS BY TEACHER
+// ADMIN / PERMITTED USERS
+// =====================================================
+
 router.get(
     "/teacher/:teacherId",
     authMiddleware,
     permissionMiddleware("teachingSlots"),
     getTeachingSlotsByTeacher
 );
+
 
 export default router;
