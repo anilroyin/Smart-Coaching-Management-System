@@ -4,40 +4,38 @@ import {
     useNavigate
 } from "react-router-dom";
 
+import {
+    useEffect,
+    useRef,
+    useState
+} from "react";
+
 import "./dashboardLayout.css";
+
+
+const API_URL = "http://localhost:3000/api/notifications";
 
 
 function DashboardLayout() {
 
     const navigate = useNavigate();
+    const notificationRef = useRef(null);
 
     const user = JSON.parse(
         localStorage.getItem("user")
     );
 
-
-    // =====================================================
-    // USER ROLE
-    // =====================================================
-
     const role = user?.role;
+
+    const [notifications, setNotifications] = useState([]);
+    const [showNotifications, setShowNotifications] =
+        useState(false);
+    const [loadingNotifications, setLoadingNotifications] =
+        useState(false);
 
 
     // =====================================================
     // ADMIN PERMISSION
-    //
-    // Super Admin gets full access.
-    //
-    // Admin permissions are stored as an object:
-    //
-    // permissions: {
-    //     students: true,
-    //     teachers: true,
-    //     teacherPayments: true,
-    //     studentFees: true,
-    //     settings: false,
-    //     ...
-    // }
     // =====================================================
 
     const hasPermission = (permission) => {
@@ -68,7 +66,7 @@ function DashboardLayout() {
 
 
     // =====================================================
-    // NAV LINK CLASS
+    // NAVIGATION CLASS
     // =====================================================
 
     const navClass = ({ isActive }) =>
@@ -77,21 +75,216 @@ function DashboardLayout() {
             : "dashboard-nav-link";
 
 
+    // =====================================================
+    // FETCH USER NOTIFICATIONS
+    // =====================================================
+
+    const fetchNotifications = async () => {
+
+        try {
+
+            setLoadingNotifications(true);
+
+            const token =
+                localStorage.getItem("token");
+
+            const response = await fetch(
+                `${API_URL}/my`,
+                {
+                    headers: {
+                        Authorization:
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to load notifications"
+                );
+            }
+
+            setNotifications(
+                data.notifications || []
+            );
+
+        } catch (error) {
+
+            console.error(
+                "NOTIFICATION ERROR:",
+                error
+            );
+
+        } finally {
+
+            setLoadingNotifications(false);
+        }
+    };
+
+
+    // =====================================================
+    // LOAD NOTIFICATIONS WHEN USER LOGS IN
+    // =====================================================
+
+    useEffect(() => {
+
+        if (role === "super_admin") {
+            return;
+        }
+
+        fetchNotifications();
+
+    }, [role]);
+
+
+    // =====================================================
+    // CLOSE DROPDOWN WHEN CLICKING OUTSIDE
+    // =====================================================
+
+    useEffect(() => {
+
+        const handleOutsideClick = (event) => {
+
+            if (
+                notificationRef.current &&
+                !notificationRef.current.contains(
+                    event.target
+                )
+            ) {
+                setShowNotifications(false);
+            }
+        };
+
+        document.addEventListener(
+            "mousedown",
+            handleOutsideClick
+        );
+
+        return () => {
+
+            document.removeEventListener(
+                "mousedown",
+                handleOutsideClick
+            );
+
+        };
+
+    }, []);
+
+
+    // =====================================================
+    // MARK NOTIFICATIONS AS READ
+    // =====================================================
+
+    const markNotificationsAsRead = async () => {
+
+        try {
+
+            const token =
+                localStorage.getItem("token");
+
+            const response = await fetch(
+                `${API_URL}/read`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        Authorization:
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to mark notifications as read"
+                );
+            }
+
+            setNotifications(previous =>
+                previous.map(notification => ({
+                    ...notification,
+                    isRead: true
+                }))
+            );
+
+        } catch (error) {
+
+            console.error(
+                "MARK NOTIFICATIONS READ ERROR:",
+                error
+            );
+        }
+    };
+
+
+    // =====================================================
+    // BELL CLICK
+    // =====================================================
+
+    const handleNotificationClick = async () => {
+
+        const willOpen = !showNotifications;
+
+        setShowNotifications(willOpen);
+
+        if (!willOpen) {
+            return;
+        }
+
+        await fetchNotifications();
+
+        await markNotificationsAsRead();
+    };
+
+
+    // =====================================================
+    // DATE FORMAT
+    // =====================================================
+
+    const formatNotificationDate = (date) => {
+
+        if (!date) {
+            return "";
+        }
+
+        return new Date(date).toLocaleString(
+            "en-IN",
+            {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        );
+    };
+
+
+    // =====================================================
+    // UNREAD COUNT
+    // =====================================================
+
+    const unreadCount = notifications.filter(
+        notification => !notification.isRead
+    ).length;
+
+
     return (
 
         <div className="dashboard-layout">
-
 
             {/* =================================================
                 SIDEBAR
             ================================================= */}
 
             <aside className="dashboard-sidebar">
-
-
-                {/* =================================================
-                    LOGO
-                ================================================= */}
 
                 <div className="dashboard-sidebar-logo">
 
@@ -106,18 +299,7 @@ function DashboardLayout() {
                 </div>
 
 
-                {/* =================================================
-                    NAVIGATION
-                ================================================= */}
-
                 <nav className="dashboard-navigation">
-
-
-                    {/* =================================================
-                        DASHBOARD
-                        
-                        Available to every role.
-                    ================================================= */}
 
                     <NavLink
                         to="/dashboard"
@@ -127,19 +309,12 @@ function DashboardLayout() {
                     </NavLink>
 
 
-                    {/* =================================================
-                        ADMIN / SUPER ADMIN
-                    ================================================= */}
+                    {/* ADMIN / SUPER ADMIN */}
 
                     {(role === "super_admin" ||
                         role === "admin") && (
 
                         <>
-
-
-                            {/* =================================================
-                                STUDENTS
-                            ================================================= */}
 
                             {hasPermission("students") && (
 
@@ -153,10 +328,6 @@ function DashboardLayout() {
                             )}
 
 
-                            {/* =================================================
-                                TEACHERS
-                            ================================================= */}
-
                             {hasPermission("teachers") && (
 
                                 <NavLink
@@ -169,19 +340,10 @@ function DashboardLayout() {
                             )}
 
 
-                            {/* =================================================
-                                TEACHER PAYMENTS
-                                
-                                Admin/Super Admin:
-                                Manage teacher payments.
-                            ================================================= */}
-
-                            {hasPermission(
-                                "teacherPayments"
-                            ) && (
+                            {role === "super_admin" && (
 
                                 <NavLink
-                                    to="/teacher-payments"
+                                    to="/admin/teacher-payments"
                                     className={navClass}
                                 >
                                     Teacher Payments
@@ -190,19 +352,10 @@ function DashboardLayout() {
                             )}
 
 
-                            {/* =================================================
-                                STUDENT FEES
-                                
-                                Admin/Super Admin:
-                                Manage student fees.
-                            ================================================= */}
-
-                            {hasPermission(
-                                "studentFees"
-                            ) && (
+                            {hasPermission("studentFees") && (
 
                                 <NavLink
-                                    to="/student-fees"
+                                    to="/admin/student-fees"
                                     className={navClass}
                                 >
                                     Student Fees
@@ -210,15 +363,6 @@ function DashboardLayout() {
 
                             )}
 
-
-                            {/* =================================================
-                                CREATE NOTIFICATION
-                                
-                                Super Admin only.
-                                
-                                This is deliberately NOT controlled
-                                by the normal Admin permission system.
-                            ================================================= */}
 
                             {role === "super_admin" && (
 
@@ -232,16 +376,10 @@ function DashboardLayout() {
                             )}
 
 
-                            {/* =================================================
-                                SETTINGS
-                            ================================================= */}
-
-                            {hasPermission(
-                                "settings"
-                            ) && (
+                            {hasPermission("settings") && (
 
                                 <NavLink
-                                    to="/settings"
+                                    to="/admin/settings"
                                     className={navClass}
                                 >
                                     Settings
@@ -254,31 +392,24 @@ function DashboardLayout() {
                     )}
 
 
-                    {/* =================================================
-                        TEACHER
-                    ================================================= */}
+                    {/* TEACHER */}
 
                     {role === "teacher" && (
 
                         <>
 
-                            {/* My Profile */}
-
                             <NavLink
-                                to="/profile"
+                                to="/teacher/my-profile"
                                 className={navClass}
                             >
                                 My Profile
                             </NavLink>
 
-
-                            {/* Own Payments */}
-
                             <NavLink
-                                to="/teacher-payments"
+                                to="/teacher/my-payments"
                                 className={navClass}
                             >
-                                Payments
+                                My Payments
                             </NavLink>
 
                         </>
@@ -286,31 +417,24 @@ function DashboardLayout() {
                     )}
 
 
-                    {/* =================================================
-                        STUDENT
-                    ================================================= */}
+                    {/* STUDENT */}
 
                     {role === "student" && (
 
                         <>
 
-                            {/* My Profile */}
-
                             <NavLink
-                                to="/profile"
+                                to="/student/my-profile"
                                 className={navClass}
                             >
                                 My Profile
                             </NavLink>
 
-
-                            {/* Own Fees */}
-
                             <NavLink
-                                to="/student-fees"
+                                to="/student/my-fees"
                                 className={navClass}
                             >
-                                Fees
+                                My Fees
                             </NavLink>
 
                         </>
@@ -319,10 +443,6 @@ function DashboardLayout() {
 
                 </nav>
 
-
-                {/* =================================================
-                    LOGOUT
-                ================================================= */}
 
                 <button
                     type="button"
@@ -341,15 +461,7 @@ function DashboardLayout() {
 
             <div className="dashboard-main">
 
-
-                {/* =================================================
-                    HEADER
-                ================================================= */}
-
                 <header className="dashboard-header">
-
-
-                    {/* System title */}
 
                     <div className="dashboard-header-title">
 
@@ -360,45 +472,138 @@ function DashboardLayout() {
                     </div>
 
 
-                    {/* User area */}
-
                     <div className="dashboard-header-user">
 
-
-                        {/* =================================================
-                            NOTIFICATION BELL
-                            
-                            Super Admin creates notifications,
-                            so Super Admin does not receive
-                            the normal notification bell.
-                            
-                            Admin / Teacher / Student receive it.
-                        ================================================= */}
+                        {/* NOTIFICATIONS */}
 
                         {role !== "super_admin" && (
 
-                            <button
-                                type="button"
-                                className="dashboard-notification"
-                                aria-label="Notifications"
-                                title="Notifications"
+                            <div
+                                className="dashboard-notification-wrapper"
+                                ref={notificationRef}
                             >
 
-                                <span
-                                    className="dashboard-notification-icon"
-                                    aria-hidden="true"
+                                <button
+                                    type="button"
+                                    className="dashboard-notification"
+                                    aria-label="Notifications"
+                                    title="Notifications"
+                                    onClick={
+                                        handleNotificationClick
+                                    }
                                 >
-                                    🔔
-                                </span>
 
-                            </button>
+                                    <span
+                                        className="dashboard-notification-icon"
+                                        aria-hidden="true"
+                                    >
+                                        🔔
+                                    </span>
+
+
+                                    {unreadCount > 0 && (
+
+                                        <span className="notification-count">
+
+                                            {unreadCount > 99
+                                                ? "99+"
+                                                : unreadCount}
+
+                                        </span>
+
+                                    )}
+
+                                </button>
+
+
+                                {/* NOTIFICATION DROPDOWN */}
+
+                                {showNotifications && (
+
+                                    <div className="notification-dropdown">
+
+                                        <div className="notification-dropdown-header">
+
+                                            <h3>
+                                                Notifications
+                                            </h3>
+
+                                            <span>
+                                                {notifications.length}
+                                            </span>
+
+                                        </div>
+
+
+                                        {loadingNotifications ? (
+
+                                            <div className="notification-dropdown-empty">
+                                                Loading...
+                                            </div>
+
+                                        ) : notifications.length === 0 ? (
+
+                                            <div className="notification-dropdown-empty">
+                                                No notifications yet.
+                                            </div>
+
+                                        ) : (
+
+                                            <div className="notification-dropdown-list">
+
+                                                {notifications
+                                                    .slice(0, 10)
+                                                    .map(
+                                                        notification => (
+
+                                                            <div
+                                                                className={
+                                                                    notification.isRead
+                                                                        ? "notification-dropdown-item"
+                                                                        : "notification-dropdown-item unread"
+                                                                }
+                                                                key={
+                                                                    notification._id
+                                                                }
+                                                            >
+
+                                                                <h4>
+                                                                    {
+                                                                        notification.title
+                                                                    }
+                                                                </h4>
+
+                                                                <p>
+                                                                    {
+                                                                        notification.message
+                                                                    }
+                                                                </p>
+
+                                                                <small>
+                                                                    {
+                                                                        formatNotificationDate(
+                                                                            notification.createdAt
+                                                                        )
+                                                                    }
+                                                                </small>
+
+                                                            </div>
+
+                                                        )
+                                                    )}
+
+                                            </div>
+
+                                        )}
+
+                                    </div>
+
+                                )}
+
+                            </div>
 
                         )}
 
-
-                        {/* =================================================
-                            USER NAME
-                        ================================================= */}
 
                         <span className="dashboard-user-name">
 
@@ -411,9 +616,7 @@ function DashboardLayout() {
                 </header>
 
 
-                {/* =================================================
-                    PAGE CONTENT
-                ================================================= */}
+                {/* PAGE CONTENT */}
 
                 <main className="dashboard-content">
 
