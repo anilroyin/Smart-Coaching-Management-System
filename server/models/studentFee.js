@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-const paymentSchema = new mongoose.Schema(
+const feeSchema = new mongoose.Schema(
     {
         // -------------------------------------------------
-        // Student enrollment this payment belongs to
+        // Student enrollment this fee belongs to
         // -------------------------------------------------
 
         enrollment: {
@@ -11,6 +11,7 @@ const paymentSchema = new mongoose.Schema(
             ref: "Enrollment",
             required: true
         },
+
 
         // -------------------------------------------------
         // Student
@@ -22,8 +23,9 @@ const paymentSchema = new mongoose.Schema(
             required: true
         },
 
+
         // -------------------------------------------------
-        // Payment month
+        // Fee month
         // Example: August 2026
         // -------------------------------------------------
 
@@ -39,10 +41,12 @@ const paymentSchema = new mongoose.Schema(
             required: true
         },
 
+
         // -------------------------------------------------
-        // Amount for this particular month
-        // This is saved separately so old payment history
-        // does not change if the enrollment fee changes.
+        // Monthly fee amount
+        //
+        // Saved separately so old fee history does not
+        // change if the enrollment fee changes later.
         // -------------------------------------------------
 
         amount: {
@@ -51,8 +55,9 @@ const paymentSchema = new mongoose.Schema(
             min: 0
         },
 
+
         // -------------------------------------------------
-        // Payment status
+        // Fee status
         // -------------------------------------------------
 
         status: {
@@ -61,18 +66,19 @@ const paymentSchema = new mongoose.Schema(
             default: "due"
         },
 
+
         // -------------------------------------------------
         // Actual payment date
-        // Only present when payment is completed.
+        // Only present when the fee is paid.
         // -------------------------------------------------
 
         paidAt: {
             type: Date
         },
 
+
         // -------------------------------------------------
         // Payment method
-        // Can be expanded later if needed.
         // -------------------------------------------------
 
         paymentMethod: {
@@ -86,6 +92,7 @@ const paymentSchema = new mongoose.Schema(
             ]
         },
 
+
         // -------------------------------------------------
         // Optional transaction/reference number
         // -------------------------------------------------
@@ -94,6 +101,7 @@ const paymentSchema = new mongoose.Schema(
             type: String,
             trim: true
         },
+
 
         // -------------------------------------------------
         // Optional admin note
@@ -111,11 +119,11 @@ const paymentSchema = new mongoose.Schema(
 
 
 // ---------------------------------------------------------
-// Prevent duplicate payment records for the same
-// enrollment and month.
+// Prevent duplicate fee records for the same
+// enrollment + month + year.
 // ---------------------------------------------------------
 
-paymentSchema.index(
+feeSchema.index(
     {
         enrollment: 1,
         month: 1,
@@ -127,9 +135,13 @@ paymentSchema.index(
 );
 
 
-const Payment = mongoose.model(
-    "Payment",
-    paymentSchema
+// ---------------------------------------------------------
+// Fee model
+// ---------------------------------------------------------
+
+const Fee = mongoose.model(
+    "Fee",
+    feeSchema
 );
 
-export default Payment;
+export default Fee;
